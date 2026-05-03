@@ -1,0 +1,1269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Amika — prototype</title>
+<style>
+  :root {
+    --bg: #191919;
+    --bg-2: #202020;
+    --bg-3: #2a2a2a;
+    --border: #2f2f2f;
+    --text: #e8e8e8;
+    --dim: #8a8a8a;
+    --dimmer: #5a5a5a;
+    --accent: #7aa7d9;
+    --accent-2: #a48bd9;
+    --srs: #c99a3a;
+    --srs-bg: #3a2e18;
+    --ok: #78b068;
+    --warn: #c97a3a;
+    --highlight: rgba(201, 154, 58, 0.28);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .jp, .jp * { font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", -apple-system, sans-serif; }
+
+  /* ====== Layout ====== */
+  #app { display: flex; height: 100vh; }
+
+  #sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--bg-2);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    overflow-y: auto;
+  }
+  #sidebar h3 {
+    font-size: 11px; font-weight: 600; color: var(--dim);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin: 18px 8px 6px; padding: 0;
+  }
+  #sidebar h3:first-child { margin-top: 0; }
+  .nav-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 5px 8px; border-radius: 5px; cursor: pointer;
+    color: var(--text); font-size: 13px;
+  }
+  .nav-item:hover { background: var(--bg-3); }
+  .nav-item .badge {
+    background: var(--srs-bg); color: var(--srs);
+    padding: 1px 6px; border-radius: 8px; font-size: 11px;
+    font-weight: 600;
+  }
+
+  #logo {
+    padding: 4px 8px 14px; color: var(--text);
+    font-weight: 600; font-size: 15px;
+  }
+  #logo .dim { color: var(--dim); font-weight: 400; margin-left: 4px; }
+  .kbd {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    padding: 2px 5px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-3);
+    color: var(--dim);
+  }
+
+  /* ====== Panes ====== */
+  #panes {
+    flex: 1;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+  }
+  #panes::-webkit-scrollbar { height: 10px; }
+  #panes::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+
+  .pane {
+    width: 520px; flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    background: var(--bg);
+    min-width: 520px;
+  }
+  .pane.home { width: 560px; min-width: 560px; }
+  .pane-head {
+    display: flex; align-items: center;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+    background: var(--bg-2);
+  }
+  .pane-head .title { flex: 1; font-size: 13px; color: var(--dim); }
+  .pane-head .title .pill {
+    background: var(--bg-3); padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--dim); margin-right: 8px;
+  }
+  .pane-head .close {
+    cursor: pointer; color: var(--dimmer);
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 16px; line-height: 1;
+  }
+  .pane-head .close:hover { color: var(--text); background: var(--bg-3); }
+  .pane-body {
+    flex: 1; overflow-y: auto;
+    padding: 24px 32px 48px;
+  }
+
+  /* ====== Entity pages ====== */
+  .hero {
+    display: flex; align-items: baseline; gap: 14px;
+    margin-bottom: 4px;
+  }
+  .hero .glyph { font-size: 48px; line-height: 1; letter-spacing: 2px; }
+  .hero .reading { color: var(--dim); font-size: 18px; }
+  .subtitle { color: var(--dim); font-size: 14px; margin-bottom: 20px; }
+
+  .srs-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 6px;
+    background: var(--bg-3); color: var(--dim);
+    border: 1px solid var(--border);
+    cursor: pointer; font-size: 12px;
+    user-select: none;
+  }
+  .srs-btn:hover { color: var(--text); border-color: var(--dimmer); }
+  .srs-btn.on {
+    background: var(--srs-bg); color: var(--srs); border-color: var(--srs);
+  }
+
+  .prop-row {
+    display: grid; grid-template-columns: 110px 1fr;
+    gap: 8px; padding: 4px 0;
+    font-size: 13px;
+  }
+  .prop-row .k { color: var(--dim); }
+  .prop-row .v { color: var(--text); }
+
+  .section {
+    margin-top: 28px;
+  }
+  .section h4 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--dim); margin: 0 0 10px; font-weight: 600;
+  }
+
+  .tag {
+    display: inline-block;
+    background: var(--bg-3); color: var(--text);
+    padding: 2px 8px; border-radius: 4px;
+    margin: 2px 4px 2px 0; font-size: 12px;
+    cursor: pointer;
+  }
+  .tag:hover { background: #363636; }
+  .tag.topic { background: rgba(91, 134, 189, 0.2); color: #8ebbe5; }
+
+  .word-link, .kanji-link, .grammar-link, .text-link {
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 1px 2px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 60ms ease;
+  }
+  .word-link:hover { background: rgba(122, 167, 217, 0.18); }
+  .kanji-link:hover { background: rgba(164, 139, 217, 0.18); }
+  .grammar-link:hover { background: rgba(120, 176, 104, 0.15); }
+  .word-link.srs-added { background: var(--highlight); }
+
+  .prose { font-size: 16px; line-height: 1.9; }
+  .prose .en { color: var(--dim); font-size: 14px; margin-top: 6px; }
+
+  .backlinks {
+    margin-top: 36px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .backlinks h4 { color: var(--dimmer); }
+  .backlink {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 0; font-size: 13px;
+    cursor: pointer; color: var(--dim);
+  }
+  .backlink:hover { color: var(--text); }
+  .backlink .type {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--dimmer); width: 60px;
+  }
+
+  /* ====== Home ====== */
+  .home-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    cursor: pointer;
+  }
+  .home-card:hover { border-color: var(--dimmer); }
+  .home-card .h {
+    font-size: 12px; color: var(--dim); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 6px;
+  }
+  .home-card .big { font-size: 20px; margin-bottom: 4px; }
+  .home-card .meta { font-size: 12px; color: var(--dim); }
+  .home-card.review {
+    background: linear-gradient(to right, var(--srs-bg), var(--bg-2) 60%);
+    border-color: var(--srs);
+  }
+  .home-card.review .big { color: var(--srs); font-weight: 600; }
+
+  .feed-item {
+    display: flex; gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .feed-item:hover .feed-title { color: var(--accent); }
+  .feed-item .icon {
+    font-size: 18px; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg-3); border-radius: 6px; flex-shrink: 0;
+  }
+  .feed-item .feed-title { font-weight: 500; }
+  .feed-item .feed-meta { color: var(--dim); font-size: 12px; }
+
+  /* ====== Command palette ====== */
+  #palette-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    z-index: 100;
+  }
+  #palette-backdrop.open { display: flex; justify-content: center; padding-top: 120px; }
+  #palette {
+    width: 560px; max-height: 60vh;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column;
+  }
+  #palette input {
+    background: transparent; border: none; outline: none;
+    color: var(--text); padding: 14px 18px; font-size: 15px;
+    border-bottom: 1px solid var(--border);
+  }
+  #palette-results { overflow-y: auto; }
+  .pal-result {
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 18px; cursor: pointer;
+  }
+  .pal-result.active, .pal-result:hover { background: var(--bg-3); }
+  .pal-result .glyph { font-size: 20px; width: 32px; text-align: center; }
+  .pal-result .meta { color: var(--dim); font-size: 12px; }
+  .pal-result .type {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--dimmer); margin-left: auto;
+  }
+
+  /* ====== Kanji damage style ====== */
+  .kanji-meaning { font-size: 22px; color: var(--ok); margin: 8px 0 18px; }
+  .components {
+    display: flex; gap: 18px; margin: 16px 0 24px;
+    flex-wrap: wrap;
+  }
+  .component {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 16px; min-width: 110px;
+    text-align: center; cursor: pointer;
+  }
+  .component:hover { border-color: var(--dimmer); }
+  .component .g { font-size: 30px; margin-bottom: 4px; }
+  .component .lbl { color: var(--dim); font-size: 12px; }
+
+  .mnemonic {
+    background: var(--bg-2); padding: 12px 16px;
+    border-radius: 6px; margin: 8px 0;
+    font-size: 14px; line-height: 1.55;
+    border-left: 3px solid var(--accent-2);
+  }
+  .mnemonic .key { color: var(--warn); text-transform: uppercase; font-weight: 600; }
+  .mnemonic .mean { color: var(--ok); font-style: italic; }
+
+  .stroke-order {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px; background: var(--bg-2);
+    border-radius: 6px; margin: 16px 0;
+  }
+  .stroke-order .frame {
+    width: 64px; height: 64px;
+    background: #fff; color: #111;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px;
+    position: relative;
+  }
+  .stroke-order .frame .num {
+    position: absolute; top: 2px; left: 4px;
+    font-size: 11px; color: var(--accent);
+  }
+
+  /* ====== Confusable ====== */
+  .confusable-row {
+    display: flex; gap: 14px; align-items: stretch;
+    margin: 10px 0 4px;
+  }
+  .confusable-card {
+    flex: 1; background: var(--bg-2);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 18px; text-align: center; cursor: pointer;
+  }
+  .confusable-card:hover { border-color: var(--accent-2); }
+  .confusable-card .g { font-size: 60px; line-height: 1; }
+  .confusable-card .r { color: var(--dim); font-size: 13px; margin-top: 6px; }
+  .confusable-card .m { font-size: 14px; margin-top: 4px; }
+  .diff-callout {
+    font-size: 13px; color: var(--dim);
+    margin: 4px 0 18px;
+    padding: 8px 12px; background: var(--bg-2);
+    border-left: 3px solid var(--warn);
+    border-radius: 4px;
+  }
+
+  /* ====== Table ====== */
+  table.dict {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.dict td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.dict td.r { color: var(--dim); width: 80px; }
+
+  /* ====== SRS review ====== */
+  .review-card {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 40px 32px;
+    text-align: center;
+  }
+  .review-card .prompt { font-size: 56px; margin-bottom: 28px; }
+  .review-card .answer { font-size: 20px; color: var(--dim); }
+  .review-card .actions {
+    display: flex; gap: 10px; justify-content: center;
+    margin-top: 28px;
+  }
+  .btn {
+    padding: 8px 16px; border-radius: 6px; cursor: pointer;
+    background: var(--bg-3); border: 1px solid var(--border);
+    color: var(--text); font-size: 13px;
+  }
+  .btn:hover { border-color: var(--dimmer); }
+
+  /* ====== Text with annotations ====== */
+  .text-source {
+    font-size: 13px; color: var(--dim); margin-bottom: 16px;
+  }
+  .prose .jp { cursor: text; }
+  .prose .jp::selection { background: rgba(122, 167, 217, 0.4); }
+
+  /* ====== Lookup popup ====== */
+  #lookup-popup {
+    position: fixed;
+    background: var(--bg-2);
+    border: 1px solid var(--dimmer);
+    border-radius: 8px;
+    padding: 14px 16px 12px;
+    min-width: 260px; max-width: 340px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.5);
+    z-index: 200;
+    display: none;
+  }
+  #lookup-popup.show { display: block; }
+  .lookup-word { font-size: 22px; margin-bottom: 2px; }
+  .lookup-reading { color: var(--dim); font-size: 13px; }
+  .lookup-meaning { margin: 8px 0 12px; font-size: 14px; line-height: 1.45; }
+  .lookup-none {
+    color: var(--dim); font-size: 13px; font-style: italic;
+    margin: 6px 0 12px;
+  }
+  .lookup-actions { display: flex; gap: 6px; }
+  .lookup-actions .btn {
+    flex: 1; padding: 6px 10px; font-size: 12px; text-align: center;
+  }
+  .lookup-actions .btn.primary {
+    background: var(--srs-bg); color: var(--srs); border-color: var(--srs);
+  }
+  .lookup-status {
+    font-size: 11px; color: var(--dim); text-transform: uppercase;
+    letter-spacing: 0.05em; margin-bottom: 8px;
+  }
+  .lookup-status.in-lib { color: var(--ok); }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div id="logo">Amika<span class="dim jp"> 網化</span></div>
+
+    <div class="nav-item" data-open="home">Home</div>
+    <div class="nav-item" data-open="review"><span>Review</span><span class="badge" id="srs-count">12</span></div>
+    <div class="nav-item" data-open-cmdk>Search <span class="kbd">⌘K</span></div>
+
+    <h3>Library</h3>
+    <div class="nav-item" data-open="list-words">Words</div>
+    <div class="nav-item" data-open="list-kanji">Kanji</div>
+    <div class="nav-item" data-open="list-grammar">Grammar</div>
+    <div class="nav-item" data-open="list-texts">Texts</div>
+
+    <h3>Sources</h3>
+    <div class="nav-item" data-open="text-lesson-2026-04-18">Lesson · Apr 18</div>
+    <div class="nav-item" data-open="text-podcast-bitesize">Bite Size pod</div>
+    <div class="nav-item" data-open="text-book-reading">Book reading</div>
+
+    <h3>Topics</h3>
+    <div class="nav-item"><span>progress</span></div>
+    <div class="nav-item"><span>work culture</span></div>
+    <div class="nav-item"><span>nature</span></div>
+  </div>
+
+  <div id="panes"></div>
+</div>
+
+<div id="palette-backdrop">
+  <div id="palette">
+    <input id="palette-input" placeholder="Search kanji, words, grammar, text…  (try 実, hachi, progress)" />
+    <div id="palette-results"></div>
+  </div>
+</div>
+
+<div id="lookup-popup"></div>
+
+<script>
+// =====================================================
+// Data
+// =====================================================
+const db = {
+  words: {
+    "庭": { reading: "にわ", meaning: "garden", kanji: ["庭"], appearsIn: ["text-lesson-2026-04-18"], topic: ["nature"] },
+    "手入れ": { reading: "ていれ", meaning: "care, maintenance", kanji: ["手","入"], appearsIn: ["text-lesson-2026-04-18"] },
+    "植物": { reading: "しょくぶつ", meaning: "plant", kanji: ["植","物"], appearsIn: ["text-lesson-2026-04-18"], topic: ["nature"] },
+    "枯れる": { reading: "かれる", meaning: "to wither", kanji: ["枯"], appearsIn: ["text-lesson-2026-04-18"], topic: ["nature"] },
+    "ブナの木": { reading: "ぶなのき", meaning: "beech tree", kanji: ["木"], appearsIn: ["text-lesson-2026-04-18"], topic: ["nature"] },
+    "鈴蘭": { reading: "すずらん", meaning: "lily of the valley", kanji: ["鈴","蘭"], appearsIn: ["text-lesson-2026-04-18"], topic: ["nature"] },
+    "酸味": { reading: "さんみ", meaning: "sourness, acidity", kanji: ["酸","味"], appearsIn: ["text-lesson-2026-04-18"] },
+    "すっぱい": { reading: "すっぱい", meaning: "sour", kanji: [], appearsIn: ["text-lesson-2026-04-18"] },
+    "評判": { reading: "ひょうばん", meaning: "reputation", kanji: ["評","判"], appearsIn: ["text-lesson-2026-04-18"] },
+    "いじわる": { reading: "いじわる", meaning: "mean, nasty (na-adj)", kanji: [], appearsIn: ["text-lesson-2026-04-18"] },
+    "ど田舎": { reading: "どいなか", meaning: "the sticks, deep countryside", kanji: ["田","舎"], appearsIn: ["text-lesson-2026-04-18"] },
+    "農家": { reading: "のうか", meaning: "farmer, farm household", kanji: ["農","家"], appearsIn: ["text-lesson-2026-04-18"] },
+    "ハチミツ": { reading: "はちみつ", meaning: "honey", kanji: [], appearsIn: ["text-lesson-2026-04-18"] },
+    "ミツバチ": { reading: "みつばち", meaning: "honeybee", kanji: [], appearsIn: ["text-lesson-2026-04-18"] },
+    "ジロジロ見る": { reading: "じろじろみる", meaning: "to stare (rudely)", kanji: ["見"], appearsIn: ["text-lesson-2026-04-18"] },
+    "距離": { reading: "きょり", meaning: "distance", kanji: ["距","離"], appearsIn: ["text-lesson-2026-04-18"] },
+    "衛生": { reading: "えいせい", meaning: "hygiene", kanji: ["衛","生"], appearsIn: ["text-lesson-2026-04-18"] },
+    "気をつける": { reading: "きをつける", meaning: "to be careful", kanji: ["気"], appearsIn: ["text-lesson-2026-04-18"] },
+    "要求": { reading: "ようきゅう", meaning: "demand, request", kanji: ["要","求"], appearsIn: ["text-lesson-2026-04-18"] },
+    "極端": { reading: "きょくたん", meaning: "extreme", kanji: ["極","端"], appearsIn: ["text-lesson-2026-04-18"] },
+    "残業": { reading: "ざんぎょう", meaning: "overtime (work)", kanji: ["残","業"], appearsIn: ["text-podcast-bitesize"], topic: ["work culture"] },
+    "仕事文化": { reading: "しごとぶんか", meaning: "work culture", kanji: ["仕","事","文","化"], appearsIn: ["text-podcast-bitesize"], topic: ["work culture"] },
+    "上司": { reading: "じょうし", meaning: "boss, superior", kanji: ["上","司"], appearsIn: ["text-podcast-bitesize"], topic: ["work culture"] },
+    "改めて": { reading: "あらためて", meaning: "once again; anew; formally", kanji: ["改"], appearsIn: ["text-book-reading"] },
+    "光": { reading: "ひかり", meaning: "light", kanji: ["光"], appearsIn: [] },
+  },
+  kanji: {
+    "実": {
+      reading: "ジツ / み",
+      meaning: "fruit; reality; truth",
+      components: [["宀", "roof"], ["木", "tree"]],
+      strokeCount: 8,
+      similarTo: ["美"],
+      on: "JITSU",
+      kun: "mi",
+      onMnemonic: { key: "JET SUE", text: "JET SUE sat under a roof eating fruit — the real deal.", mean: "fruit/reality" },
+      words: ["実家", "実物", "真実"],
+    },
+    "美": {
+      reading: "ビ / うつく（しい）",
+      meaning: "beauty",
+      components: [["羊", "sheep"], ["大", "big"]],
+      strokeCount: 9,
+      similarTo: ["実"],
+      on: "BI",
+      kun: "utsuku(shii)",
+      onMnemonic: { key: "BEE", text: "A BIG SHEEP is BEAutiful — unlike 実, no roof.", mean: "beauty" },
+      words: ["美人", "美味しい"],
+    },
+    "光": {
+      reading: "コウ / ひかり",
+      meaning: "shining, light",
+      components: [["兀", "pi"], ["⺌", "tcfbbyesiyl"]],
+      strokeCount: 6,
+      similarTo: [],
+      on: "KOU",
+      kun: "hikari",
+      onMnemonic: { key: "COCAINE", text: "COCAINE is shiny white powder.", mean: "shining" },
+      kunMnemonic: { text: "4 and 20 baby birds inside of a shining pie.", mean: "shining" },
+      words: ["光"],
+    },
+    "庭": { reading: "テイ / にわ", meaning: "garden, courtyard", components: [["广","building"],["廷","court"]], strokeCount: 10, similarTo: [], on: "TEI", kun: "niwa", onMnemonic: { key: "TAY", text: "A courtly building with a private garden.", mean: "garden" }, words: ["庭", "家庭"] },
+    "残": { reading: "ザン / のこ（る）", meaning: "remain, leftover", components: [["歹","bones"],["戈","halberd"]], strokeCount: 10, similarTo: [], on: "ZAN", kun: "noko(ru)", onMnemonic: { key: "ZAMBONI", text: "After the ZAMBONI leaves, only bones remain.", mean: "remainder" }, words: ["残業", "残念"] },
+    "業": { reading: "ギョウ / わざ", meaning: "business, vocation, karma", components: [["丵","weeds"],["木","tree"]], strokeCount: 13, similarTo: [], on: "GYOU", kun: "waza", onMnemonic: { key: "GYRO", text: "A GYRO shop is your family business.", mean: "vocation" }, words: ["残業", "工業", "業界"] },
+    "改": { reading: "カイ / あらた（める）", meaning: "reform, change", components: [["己","self"],["攵","rap"]], strokeCount: 7, similarTo: [], on: "KAI", kun: "arata(meru)", onMnemonic: { key: "KAI", text: "Rap yourself to reform yourself.", mean: "change" }, words: ["改めて", "改革"] },
+  },
+  grammar: {
+    "ていく": {
+      pattern: "Vて + いく",
+      meaning: "travel doing ~ / go after ~ / ~ will continue into future",
+      source: "Try N3 · Chapter 8",
+      topic: "progress",
+      examples: [
+        { jp: "冬になると渡り鳥は南のほうへ飛んでいく。", en: "When winter comes, migratory birds fly toward the south.", sense: "travel doing ~" },
+        { jp: "もしもし、今からそっちへいくけど、何か買っていこうか。", en: "Hello, I'm heading over — should I buy something on the way?", sense: "go after ~" },
+      ],
+      wordsUsed: [],
+    },
+  },
+  texts: {
+    "text-lesson-2026-04-18": {
+      type: "lesson",
+      title: "Lesson · 2026-04-18",
+      source: "Teacher notes",
+      content: [
+        { jp: "[庭]の[手入れ]をするのが大好きです。", en: "I love gardening." },
+        { jp: "他の[植物]が生きられなくなります。／[枯れる]てしまいます。", en: "Other plants can no longer live / will wither." },
+        { jp: "[ブナの木]。[鈴蘭]。しっとりしています。", en: "Beech tree. Lily of the valley. It's damp/moist." },
+        { jp: "[すっぱい]味＝[酸味]。[酸味]がある。", en: "Sour taste = acidity. It is sour." },
+        { jp: "[評判]。[いじわる]（な）。[ど田舎]。[農家]の人。", en: "Reputation. Mean. The sticks. Farmer." },
+        { jp: "[ハチミツ]。[ミツバチ]。ミツをすう。", en: "Honey. Honeybee. To suck nectar." },
+        { jp: "[ジロジロ見る]ていました。[ジロジロ見る]られました。", en: "They were staring at me / I was stared at." },
+        { jp: "全然違いました。[距離]。[衛生]。〜に[気をつける]。", en: "Totally different. Distance. Hygiene. Be careful about ~." },
+        { jp: "[要求]が多い。[極端]な例。", en: "Lots of demands. An extreme example." },
+      ],
+    },
+    "text-podcast-bitesize": {
+      type: "podcast",
+      title: "Bite Size Japanese · Work Culture",
+      source: "Layla — Bite Size Japanese Podcast",
+      content: [
+        { jp: "このポッドキャストは友達と話すような感じで、自然な日本語[を勉強できるポッドキャストです。", en: "" },
+        { jp: "今回のテーマは日本の[仕事文化]ですね。", en: "" },
+        { jp: "みなさんは日本の[仕事文化]についてどんなイメージをもってますか。", en: "" },
+        { jp: "やっぱり日本人ってちょっと働きすぎなあイメージあるんじゃないかな。", en: "" },
+        { jp: "例えば、[残業]が毎日あって家に帰るのが8時とか9時とか。", en: "" },
+        { jp: "後はなんか[上司]が帰る前に帰りにくいとか。", en: "" },
+      ],
+    },
+    "text-book-reading": {
+      type: "book",
+      title: "Reading · Feb 19",
+      source: "Book — unknown",
+      content: [
+        { jp: "毎日どこか行く場所があるということの安心のほかに、いったいあの場所にどんな大切なことがあるのだろうとそんなことを[改めて]考えてみた。", en: "I tried to think why on earth that place was so important, except for the comfort of having somewhere to go each day." },
+      ],
+    },
+  },
+};
+
+// SRS state — which entities are in review queue
+const srs = {
+  added: new Set(["残業", "改めて", "極端", "酸味", "距離", "衛生", "評判", "要求", "ジロジロ見る", "ていく", "実", "美"]),
+  due: ["残業", "極端", "実", "美", "改めて"], // today
+};
+
+// =====================================================
+// Pane system
+// =====================================================
+const panesEl = document.getElementById("panes");
+
+function openPane(key, afterPaneIndex = null) {
+  // Remove any panes to the right of afterPaneIndex
+  const children = Array.from(panesEl.children);
+  if (afterPaneIndex !== null) {
+    children.slice(afterPaneIndex + 1).forEach(c => c.remove());
+  }
+  // If this pane already open somewhere, just scroll to it
+  const existing = [...panesEl.children].find(p => p.dataset.key === key);
+  if (existing) {
+    existing.scrollIntoView({ inline: "end", behavior: "smooth" });
+    return;
+  }
+  const pane = renderPane(key);
+  panesEl.appendChild(pane);
+  setTimeout(() => pane.scrollIntoView({ inline: "end", behavior: "smooth" }), 10);
+}
+
+function renderPane(key) {
+  const pane = document.createElement("div");
+  pane.className = "pane";
+  pane.dataset.key = key;
+
+  const head = document.createElement("div");
+  head.className = "pane-head";
+
+  const body = document.createElement("div");
+  body.className = "pane-body";
+
+  let title = "";
+  let pill = "";
+  let paneClass = "";
+
+  if (key === "home") {
+    title = "Home"; pill = "home"; paneClass = "home";
+    body.innerHTML = renderHome();
+  } else if (key === "review") {
+    title = "Today's review"; pill = "SRS";
+    body.innerHTML = renderReview();
+  } else if (key.startsWith("word:")) {
+    const w = key.slice(5);
+    title = w; pill = "word";
+    body.innerHTML = renderWord(w);
+  } else if (key.startsWith("kanji:")) {
+    const k = key.slice(6);
+    title = k; pill = "kanji";
+    body.innerHTML = renderKanji(k);
+  } else if (key.startsWith("grammar:")) {
+    const g = key.slice(8);
+    title = db.grammar[g].pattern; pill = "grammar";
+    body.innerHTML = renderGrammar(g);
+  } else if (key.startsWith("text-") || db.texts[key]) {
+    title = db.texts[key].title; pill = db.texts[key].type;
+    body.innerHTML = renderText(key);
+  } else if (key === "list-words") {
+    title = "All words"; pill = "index";
+    body.innerHTML = renderWordList();
+  } else if (key === "list-kanji") {
+    title = "All kanji"; pill = "index";
+    body.innerHTML = renderKanjiList();
+  } else if (key === "list-grammar") {
+    title = "All grammar"; pill = "index";
+    body.innerHTML = renderGrammarList();
+  } else if (key === "list-texts") {
+    title = "All texts"; pill = "index";
+    body.innerHTML = renderTextList();
+  } else if (key === "confusable:実-美") {
+    title = "実 vs 美"; pill = "compare";
+    body.innerHTML = renderConfusable("実", "美");
+  }
+
+  head.innerHTML = `<div class="title"><span class="pill">${pill}</span><span class="jp">${title}</span></div><div class="close">×</div>`;
+  head.querySelector(".close").onclick = () => pane.remove();
+
+  if (paneClass) pane.classList.add(paneClass);
+  pane.appendChild(head);
+  pane.appendChild(body);
+
+  // Bind clicks inside body
+  body.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-link]");
+    if (!t) return;
+    e.preventDefault();
+    const targetKey = t.dataset.link;
+    const idx = [...panesEl.children].indexOf(pane);
+    openPane(targetKey, idx);
+  });
+  body.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-srs]");
+    if (!t) return;
+    e.stopPropagation();
+    const id = t.dataset.srs;
+    if (srs.added.has(id)) srs.added.delete(id); else srs.added.add(id);
+    document.getElementById("srs-count").textContent = srs.added.size;
+    // refresh this pane
+    const keepKey = pane.dataset.key;
+    pane.remove();
+    openPane(keepKey);
+  });
+
+  return pane;
+}
+
+// =====================================================
+// Renderers
+// =====================================================
+function srsButton(id) {
+  const on = srs.added.has(id);
+  return `<button class="srs-btn ${on ? 'on' : ''}" data-srs="${id}">${on ? '✓ in SRS' : '+ add to SRS'}</button>`;
+}
+
+function wordLink(w) {
+  if (!db.words[w]) return `<span class="jp">${w}</span>`;
+  const srsCls = srs.added.has(w) ? "srs-added" : "";
+  return `<span class="word-link jp ${srsCls}" data-link="word:${w}">${w}</span>`;
+}
+function kanjiLink(k) {
+  if (!db.kanji[k]) return `<span class="jp">${k}</span>`;
+  return `<span class="kanji-link jp" data-link="kanji:${k}">${k}</span>`;
+}
+
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function annotateText(str) {
+  // Drop the [..] seed hints — truth is db.words membership now.
+  const clean = str.replace(/[\[\]]/g, "");
+  const words = Object.keys(db.words).sort((a, b) => b.length - a.length);
+  const matches = [];
+  for (const w of words) {
+    let idx = 0;
+    while ((idx = clean.indexOf(w, idx)) !== -1) {
+      const overlap = matches.some(m => idx < m.end && idx + w.length > m.start);
+      if (!overlap) matches.push({ start: idx, end: idx + w.length, word: w });
+      idx += w.length;
+    }
+  }
+  matches.sort((a, b) => a.start - b.start);
+  let html = ""; let pos = 0;
+  for (const m of matches) {
+    html += escapeHtml(clean.slice(pos, m.start));
+    html += wordLink(m.word);
+    pos = m.end;
+  }
+  html += escapeHtml(clean.slice(pos));
+  return html;
+}
+
+function renderHome() {
+  const recentAdded = ["残業", "改めて", "ていく", "光"];
+  const recentTexts = ["text-lesson-2026-04-18", "text-podcast-bitesize", "text-book-reading"];
+
+  return `
+    <div class="hero"><div style="font-size:30px">こんにちは、George</div></div>
+    <div class="subtitle">Friday, April 18 · 3-day streak · 187 SRS cards</div>
+
+    <div class="home-card review" data-link="review">
+      <div class="h">Today's review</div>
+      <div class="big jp">${srs.due.length} cards due</div>
+      <div class="meta">Mix of words, kanji &amp; grammar — ~6 min</div>
+    </div>
+
+    <div class="home-card" data-link="text-lesson-2026-04-18">
+      <div class="h">Latest lesson — today</div>
+      <div class="big jp">庭の手入れ · ハチミツ · ど田舎</div>
+      <div class="meta">22 new words · 8 unreviewed</div>
+    </div>
+
+    <div class="section">
+      <h4>Recently added</h4>
+      ${recentAdded.map(id => {
+        const w = db.words[id] || db.grammar[id] || db.kanji[id];
+        const type = db.words[id] ? "word" : db.kanji[id] ? "kanji" : "grammar";
+        const link = type === "word" ? `word:${id}` : type === "kanji" ? `kanji:${id}` : `grammar:${id}`;
+        const label = db.words[id]?.meaning || db.kanji[id]?.meaning || db.grammar[id]?.meaning;
+        return `<div class="feed-item" data-link="${link}">
+          <div class="icon jp">${id.length > 2 ? id.slice(0,1) : id}</div>
+          <div>
+            <div class="feed-title jp">${id} <span style="color:var(--dim);font-weight:400;font-size:13px;margin-left:6px">${label}</span></div>
+            <div class="feed-meta">${type}</div>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="section">
+      <h4>Explore</h4>
+      <div class="feed-item" data-link="confusable:実-美">
+        <div class="icon">⚡</div>
+        <div>
+          <div class="feed-title">You keep muddling 実 &amp; 美</div>
+          <div class="feed-meta">Compare them side-by-side</div>
+        </div>
+      </div>
+      <div class="feed-item" data-link="text-podcast-bitesize">
+        <div class="icon">🎧</div>
+        <div>
+          <div class="feed-title">Podcast: Bite Size · Work Culture</div>
+          <div class="feed-meta">3 words marked · click any to revisit</div>
+        </div>
+      </div>
+      <div class="feed-item" data-link="grammar:ていく">
+        <div class="icon">文</div>
+        <div>
+          <div class="feed-title">Grammar: ～ていく</div>
+          <div class="feed-meta">From Try N3 · 2 example sentences</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderWord(id) {
+  const w = db.words[id];
+  if (!w) return `<p>No data for ${id}.</p>`;
+  const kanjiRow = w.kanji.length
+    ? w.kanji.map(k => kanjiLink(k)).join(" · ")
+    : "<span style='color:var(--dim)'>— kana only</span>";
+  const topics = (w.topic || []).map(t => `<span class="tag topic">${t}</span>`).join("");
+  const appears = w.appearsIn.map(t => backlinkRow("TEXT", db.texts[t].title, t)).join("");
+
+  return `
+    <div class="hero">
+      <div class="glyph jp">${id}</div>
+      <div class="reading jp">${w.reading}</div>
+    </div>
+    <div style="margin: 6px 0 18px">${srsButton(id)}</div>
+
+    <div class="prop-row"><div class="k">Meaning</div><div class="v">${w.meaning}</div></div>
+    <div class="prop-row"><div class="k">Kanji</div><div class="v jp">${kanjiRow}</div></div>
+    ${topics ? `<div class="prop-row"><div class="k">Topics</div><div class="v">${topics}</div></div>` : ""}
+
+    <div class="section">
+      <h4>Example sentences</h4>
+      ${w.appearsIn.map(t => {
+        const txt = db.texts[t];
+        const hit = txt.content.find(l => l.jp.includes(`[${id}]`)) || txt.content[0];
+        return `<div style="margin-bottom:14px;padding:10px 14px;background:var(--bg-2);border-radius:6px;cursor:pointer" data-link="${t}">
+          <div class="prose jp">${annotateText(hit.jp)}</div>
+          ${hit.en ? `<div class="en">${hit.en}</div>` : ""}
+          <div style="font-size:11px;color:var(--dimmer);margin-top:6px;text-transform:uppercase;letter-spacing:0.05em">${txt.title}</div>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="backlinks">
+      <h4>Appears in</h4>
+      ${appears}
+    </div>
+  `;
+}
+
+function renderKanji(id) {
+  const k = db.kanji[id];
+  if (!k) return `<p>No data for ${id}.</p>`;
+  const wordsUsing = Object.entries(db.words)
+    .filter(([, w]) => w.kanji.includes(id))
+    .map(([name]) => name);
+  const similar = (k.similarTo || []).map(s => `<span class="tag" data-link="confusable:${[id,s].sort().join('-')}">${id} vs ${s}</span>`).join("");
+
+  return `
+    <div class="hero">
+      <div class="glyph jp">${id}</div>
+      <div class="reading jp">${k.reading}</div>
+    </div>
+    <div style="margin: 6px 0 14px">${srsButton(id)}</div>
+    <div class="kanji-meaning">${k.meaning}</div>
+
+    <div class="section">
+      <h4>Components</h4>
+      <div class="components">
+        ${k.components.map(([g, lbl]) => `<div class="component"><div class="g jp">${g}</div><div class="lbl">${lbl}</div></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Stroke order (${k.strokeCount})</h4>
+      <div class="stroke-order">
+        ${[...Array(Math.min(k.strokeCount, 8))].map((_, i) => `<div class="frame"><span class="num">${i+1}</span><span class="jp">${id}</span></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Mnemonics</h4>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:6px">Onyomi · ${k.on}</div>
+      <div class="mnemonic">
+        <span class="key">${k.onMnemonic.key}</span> — ${k.onMnemonic.text} <span class="mean">(${k.onMnemonic.mean})</span>
+      </div>
+      ${k.kunMnemonic ? `
+        <div style="font-size:12px;color:var(--dim);margin:14px 0 6px">Kunyomi · ${k.kun}</div>
+        <div class="mnemonic">${k.kunMnemonic.text} <span class="mean">(${k.kunMnemonic.mean})</span></div>
+      ` : ""}
+    </div>
+
+    ${similar ? `<div class="section"><h4>Easily confused with</h4>${similar}</div>` : ""}
+
+    <div class="backlinks">
+      <h4>Words using ${id}</h4>
+      ${wordsUsing.length ? wordsUsing.map(w => `<div class="backlink" data-link="word:${w}"><span class="type">WORD</span><span class="jp">${w}</span> <span style="color:var(--dim);margin-left:8px">${db.words[w].meaning}</span></div>`).join("") : '<div style="color:var(--dim)">No words in library yet</div>'}
+    </div>
+  `;
+}
+
+function renderGrammar(id) {
+  const g = db.grammar[id];
+  return `
+    <div class="hero"><div class="glyph jp" style="font-size:30px">${g.pattern}</div></div>
+    <div style="margin: 6px 0 18px">${srsButton(id)}</div>
+
+    <div class="prop-row"><div class="k">Meaning</div><div class="v">${g.meaning}</div></div>
+    <div class="prop-row"><div class="k">Source</div><div class="v">${g.source}</div></div>
+    <div class="prop-row"><div class="k">Topic</div><div class="v"><span class="tag topic">${g.topic}</span></div></div>
+
+    <div class="section">
+      <h4>Examples</h4>
+      ${g.examples.map(e => `
+        <div style="margin-bottom:18px">
+          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${e.sense}</div>
+          <div class="prose jp">${e.jp}</div>
+          <div class="en">${e.en}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderText(id) {
+  const t = db.texts[id];
+  return `
+    <div class="hero"><div style="font-size:22px">${t.title}</div></div>
+    <div class="text-source">${t.source}</div>
+    <div class="prose">
+      ${t.content.map(line => `
+        <div style="margin-bottom:14px">
+          <div class="jp">${annotateText(line.jp)}</div>
+          ${line.en ? `<div class="en">${line.en}</div>` : ""}
+        </div>
+      `).join("")}
+    </div>
+
+    <div class="backlinks">
+      <h4>Marked words (${t.content.reduce((acc, l) => acc + (l.jp.match(/\[[^\]]+\]/g) || []).length, 0)})</h4>
+      ${[...new Set(t.content.flatMap(l => (l.jp.match(/\[([^\]]+)\]/g) || []).map(m => m.slice(1,-1))))]
+        .map(w => db.words[w] ? `<div class="backlink" data-link="word:${w}"><span class="type">WORD</span><span class="jp">${w}</span> <span style="color:var(--dim);margin-left:8px">${db.words[w].meaning}</span></div>` : "")
+        .join("")}
+    </div>
+  `;
+}
+
+function renderConfusable(a, b) {
+  const ka = db.kanji[a], kb = db.kanji[b];
+  return `
+    <div class="hero"><div style="font-size:22px">Confusables · ${a} vs ${b}</div></div>
+    <div class="subtitle">You've seen these two get mixed up.</div>
+
+    <div class="confusable-row">
+      <div class="confusable-card" data-link="kanji:${a}">
+        <div class="g jp">${a}</div>
+        <div class="r jp">${ka.reading}</div>
+        <div class="m">${ka.meaning}</div>
+      </div>
+      <div class="confusable-card" data-link="kanji:${b}">
+        <div class="g jp">${b}</div>
+        <div class="r jp">${kb.reading}</div>
+        <div class="m">${kb.meaning}</div>
+      </div>
+    </div>
+
+    <div class="diff-callout">
+      <strong>Key difference:</strong> ${a} has ${ka.components.map(c => c[0]).join("+")} (${ka.components.map(c => c[1]).join(", ")});
+      ${b} has ${kb.components.map(c => c[0]).join("+")} (${kb.components.map(c => c[1]).join(", ")}).
+      The ${b === "美" ? "羊 (sheep)" : "木 (tree)"} on top of ${b === "美" ? "大 (big)" : ""} is the giveaway for ${b}.
+    </div>
+
+    <div class="section">
+      <h4>Drill</h4>
+      <div class="review-card">
+        <div class="prompt jp">${Math.random() > 0.5 ? a : b}</div>
+        <div class="answer">Which one is it? Tap to reveal.</div>
+        <div class="actions">
+          <div class="btn">${a} · ${ka.meaning}</div>
+          <div class="btn">${b} · ${kb.meaning}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderReview() {
+  const card = srs.due[0] || "残業";
+  const w = db.words[card] || db.kanji[card] || db.grammar[card];
+  const reading = w.reading || w.pattern;
+  const meaning = w.meaning;
+  return `
+    <div class="hero"><div style="font-size:22px">Review</div></div>
+    <div class="subtitle">${srs.due.length} cards due · 6 min estimate</div>
+
+    <div class="review-card">
+      <div class="prompt jp">${card}</div>
+      <div class="answer jp">${reading} — ${meaning}</div>
+      <div class="actions">
+        <div class="btn">Again</div>
+        <div class="btn">Hard</div>
+        <div class="btn">Good</div>
+        <div class="btn">Easy</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h4>Queue</h4>
+      ${srs.due.map(id => {
+        const item = db.words[id] || db.kanji[id] || db.grammar[id];
+        const type = db.words[id] ? "word" : db.kanji[id] ? "kanji" : "grammar";
+        const link = type === "word" ? `word:${id}` : type === "kanji" ? `kanji:${id}` : `grammar:${id}`;
+        return `<div class="backlink" data-link="${link}"><span class="type">${type.toUpperCase()}</span><span class="jp">${id}</span><span style="color:var(--dim);margin-left:8px">${item.meaning||item.pattern}</span></div>`;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderWordList() {
+  const rows = Object.entries(db.words).map(([id, w]) =>
+    `<tr data-link="word:${id}" style="cursor:pointer">
+      <td class="jp" style="font-size:16px">${id}</td>
+      <td class="r jp">${w.reading}</td>
+      <td>${w.meaning}</td>
+      <td>${srs.added.has(id) ? '<span class="tag" style="background:var(--srs-bg);color:var(--srs)">SRS</span>' : ''}</td>
+    </tr>`).join("");
+  return `<div class="hero"><div style="font-size:22px">Words · ${Object.keys(db.words).length}</div></div>
+    <table class="dict"><tbody>${rows}</tbody></table>`;
+}
+function renderKanjiList() {
+  const rows = Object.entries(db.kanji).map(([id, k]) =>
+    `<tr data-link="kanji:${id}" style="cursor:pointer">
+      <td class="jp" style="font-size:24px">${id}</td>
+      <td class="r">${k.reading}</td>
+      <td>${k.meaning}</td>
+    </tr>`).join("");
+  return `<div class="hero"><div style="font-size:22px">Kanji · ${Object.keys(db.kanji).length}</div></div>
+    <table class="dict"><tbody>${rows}</tbody></table>`;
+}
+function renderGrammarList() {
+  const rows = Object.entries(db.grammar).map(([id, g]) =>
+    `<tr data-link="grammar:${id}" style="cursor:pointer">
+      <td class="jp" style="font-size:18px">${g.pattern}</td>
+      <td>${g.meaning}</td>
+      <td class="r">${g.source}</td>
+    </tr>`).join("");
+  return `<div class="hero"><div style="font-size:22px">Grammar</div></div>
+    <table class="dict"><tbody>${rows}</tbody></table>`;
+}
+function renderTextList() {
+  const rows = Object.entries(db.texts).map(([id, t]) =>
+    `<tr data-link="${id}" style="cursor:pointer">
+      <td>${t.title}</td>
+      <td class="r">${t.type}</td>
+      <td>${t.source}</td>
+    </tr>`).join("");
+  return `<div class="hero"><div style="font-size:22px">Texts</div></div>
+    <table class="dict"><tbody>${rows}</tbody></table>`;
+}
+
+function backlinkRow(type, title, key) {
+  return `<div class="backlink" data-link="${key}"><span class="type">${type}</span>${title}</div>`;
+}
+
+// =====================================================
+// Mini dictionary (prototype fallback — real dict later)
+// =====================================================
+const miniDict = {
+  "場所": { reading: "ばしょ", meaning: "place, location" },
+  "大切": { reading: "たいせつ", meaning: "important, precious" },
+  "安心": { reading: "あんしん", meaning: "relief, peace of mind" },
+  "考える": { reading: "かんがえる", meaning: "to think, consider" },
+  "毎日": { reading: "まいにち", meaning: "every day" },
+  "働きすぎ": { reading: "はたらきすぎ", meaning: "overworking" },
+  "働く": { reading: "はたらく", meaning: "to work" },
+  "仕事": { reading: "しごと", meaning: "work, job" },
+  "友達": { reading: "ともだち", meaning: "friend" },
+  "自然": { reading: "しぜん", meaning: "nature, natural" },
+  "勉強": { reading: "べんきょう", meaning: "study" },
+  "日本": { reading: "にほん", meaning: "Japan" },
+  "日本人": { reading: "にほんじん", meaning: "Japanese person" },
+  "家": { reading: "いえ", meaning: "house, home" },
+  "帰る": { reading: "かえる", meaning: "to return, go home" },
+  "話す": { reading: "はなす", meaning: "to talk, speak" },
+  "飛ぶ": { reading: "とぶ", meaning: "to fly" },
+  "渡り鳥": { reading: "わたりどり", meaning: "migratory bird" },
+  "冬": { reading: "ふゆ", meaning: "winter" },
+  "南": { reading: "みなみ", meaning: "south" },
+  "買う": { reading: "かう", meaning: "to buy" },
+  "みなさん": { reading: "みなさん", meaning: "everyone" },
+  "今回": { reading: "こんかい", meaning: "this time" },
+  "テーマ": { reading: "テーマ", meaning: "theme, topic" },
+  "文化": { reading: "ぶんか", meaning: "culture" },
+  "イメージ": { reading: "イメージ", meaning: "image, impression" },
+  "例えば": { reading: "たとえば", meaning: "for example" },
+  "時": { reading: "とき", meaning: "time, when" },
+};
+
+function lookup(text) {
+  if (db.words[text]) return { reading: db.words[text].reading, meaning: db.words[text].meaning, inLib: true };
+  if (miniDict[text]) return { ...miniDict[text], inLib: false };
+  return null;
+}
+
+function refreshPanes() {
+  const keys = [...panesEl.children].map(p => p.dataset.key);
+  panesEl.innerHTML = "";
+  keys.forEach(k => openPane(k));
+}
+
+const popup = document.getElementById("lookup-popup");
+
+function showLookup(text, rect) {
+  const entry = lookup(text);
+  const inLib = !!db.words[text];
+  const inSrs = srs.added.has(text);
+  popup.innerHTML = `
+    ${entry ? `<div class="lookup-status ${inLib ? 'in-lib' : ''}">${inLib ? 'in library' : entry ? 'dictionary' : ''}</div>` : ''}
+    <div class="lookup-word jp">${text}</div>
+    ${entry ? `
+      <div class="lookup-reading jp">${entry.reading}</div>
+      <div class="lookup-meaning">${entry.meaning}</div>
+    ` : `
+      <div class="lookup-none">Not in dictionary. Add with a note?</div>
+    `}
+    <div class="lookup-actions">
+      ${inLib
+        ? `<button class="btn" data-act="open">Open →</button>`
+        : `<button class="btn primary" data-act="add-lib">+ Library</button>`}
+      <button class="btn ${inSrs ? 'primary' : ''}" data-act="srs">${inSrs ? '✓ SRS' : '+ SRS'}</button>
+    </div>
+  `;
+  const x = Math.min(rect.left, window.innerWidth - 360);
+  const y = rect.bottom + 8;
+  popup.style.left = x + "px";
+  popup.style.top = y + "px";
+  popup.classList.add("show");
+  popup.dataset.word = text;
+}
+function hideLookup() { popup.classList.remove("show"); }
+
+document.addEventListener("mouseup", (e) => {
+  if (e.target.closest("#lookup-popup")) return;
+  const sel = window.getSelection();
+  const txt = sel.toString().trim();
+  if (!txt) { return; }
+  if (txt.length > 20) { hideLookup(); return; }
+  if (!e.target.closest(".prose, .pane-body")) return;
+  // Only Japanese-ish selections
+  if (!/[\u3040-\u30ff\u4e00-\u9faf]/.test(txt)) return;
+  const rect = sel.getRangeAt(0).getBoundingClientRect();
+  showLookup(txt, rect);
+});
+document.addEventListener("mousedown", (e) => {
+  if (!e.target.closest("#lookup-popup") && !e.target.closest(".prose")) hideLookup();
+});
+
+popup.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const word = popup.dataset.word;
+  const act = btn.dataset.act;
+  if (act === "add-lib" || (act === "srs" && !db.words[word])) {
+    const entry = lookup(word) || { reading: word, meaning: "(add meaning)" };
+    db.words[word] = {
+      reading: entry.reading,
+      meaning: entry.meaning,
+      kanji: [...word].filter(c => /[\u4e00-\u9faf]/.test(c)),
+      appearsIn: [],
+    };
+  }
+  if (act === "srs") {
+    if (srs.added.has(word)) srs.added.delete(word); else srs.added.add(word);
+    document.getElementById("srs-count").textContent = srs.added.size;
+  } else if (act === "open") {
+    hideLookup();
+    openPane(`word:${word}`);
+    return;
+  }
+  hideLookup();
+  window.getSelection().removeAllRanges();
+  refreshPanes();
+});
+
+// =====================================================
+// Command palette
+// =====================================================
+const palette = document.getElementById("palette-backdrop");
+const palInput = document.getElementById("palette-input");
+const palResults = document.getElementById("palette-results");
+
+function openPalette() { palette.classList.add("open"); palInput.value = ""; palInput.focus(); renderPalette(""); }
+function closePalette() { palette.classList.remove("open"); }
+
+function renderPalette(q) {
+  const lower = q.toLowerCase();
+  const items = [];
+  for (const [id, w] of Object.entries(db.words)) {
+    const score = matchScore(q, [id, w.reading, w.meaning]);
+    if (score > 0) items.push({ key: `word:${id}`, glyph: id, label: id, meta: `${w.reading} · ${w.meaning}`, type: "word", score });
+  }
+  for (const [id, k] of Object.entries(db.kanji)) {
+    const score = matchScore(q, [id, k.reading, k.meaning, k.on, k.kun]);
+    if (score > 0) items.push({ key: `kanji:${id}`, glyph: id, label: id, meta: `${k.reading} · ${k.meaning}`, type: "kanji", score });
+  }
+  for (const [id, g] of Object.entries(db.grammar)) {
+    const score = matchScore(q, [id, g.pattern, g.meaning, g.topic]);
+    if (score > 0) items.push({ key: `grammar:${id}`, glyph: "文", label: g.pattern, meta: g.meaning, type: "grammar", score });
+  }
+  for (const [id, t] of Object.entries(db.texts)) {
+    const score = matchScore(q, [t.title, t.source, t.type]);
+    if (score > 0) items.push({ key: id, glyph: t.type === "podcast" ? "🎧" : t.type === "book" ? "📖" : "📝", label: t.title, meta: t.source, type: t.type, score });
+  }
+  items.sort((a, b) => b.score - a.score);
+  palResults.innerHTML = items.slice(0, 12).map((it, i) =>
+    `<div class="pal-result ${i===0?'active':''}" data-link="${it.key}">
+      <div class="glyph jp">${it.glyph}</div>
+      <div>
+        <div class="jp" style="font-weight:500">${it.label}</div>
+        <div class="meta">${it.meta}</div>
+      </div>
+      <div class="type">${it.type}</div>
+    </div>`).join("") || `<div style="padding:18px;color:var(--dim);text-align:center">No results</div>`;
+}
+
+function matchScore(q, fields) {
+  if (!q) return 1;
+  const lower = q.toLowerCase();
+  let s = 0;
+  for (const f of fields) {
+    if (!f) continue;
+    const l = f.toLowerCase();
+    if (l === lower) s += 100;
+    else if (l.startsWith(lower)) s += 30;
+    else if (l.includes(lower)) s += 10;
+    if (f.includes(q)) s += 20; // kanji match
+  }
+  return s;
+}
+
+palInput.addEventListener("input", () => renderPalette(palInput.value));
+palResults.addEventListener("click", (e) => {
+  const t = e.target.closest(".pal-result");
+  if (!t) return;
+  closePalette();
+  openPane(t.dataset.link);
+});
+palInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const first = palResults.querySelector(".pal-result");
+    if (first) { closePalette(); openPane(first.dataset.link); }
+  } else if (e.key === "Escape") closePalette();
+});
+palette.addEventListener("click", (e) => { if (e.target === palette) closePalette(); });
+
+// =====================================================
+// Global hotkeys + sidebar
+// =====================================================
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); openPalette(); }
+  if (e.key === "Escape" && !palette.classList.contains("open")) {
+    // close rightmost pane
+    const last = panesEl.lastElementChild;
+    if (last && panesEl.children.length > 1) last.remove();
+  }
+});
+
+document.querySelectorAll("#sidebar [data-open]").forEach(el => {
+  el.addEventListener("click", () => {
+    // clear all panes and open fresh
+    panesEl.innerHTML = "";
+    openPane(el.dataset.open);
+  });
+});
+document.querySelectorAll("#sidebar [data-open-cmdk]").forEach(el => {
+  el.addEventListener("click", openPalette);
+});
+
+// =====================================================
+// Boot
+// =====================================================
+openPane("home");
+document.getElementById("srs-count").textContent = srs.added.size;
+</script>
+</body>
+</html>
