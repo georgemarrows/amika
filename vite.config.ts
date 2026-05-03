@@ -1,13 +1,17 @@
 import { defineConfig } from "vite";
 import solidPlugin from "vite-plugin-solid";
 
+const clientPort = Number(process.env.CLIENT_PORT ?? 5173);
+const serverOrigin =
+  process.env.SERVER_ORIGIN ?? `http://${process.env.HOST ?? "127.0.0.1"}:${process.env.PORT ?? "3000"}`;
+
 export default defineConfig({
   plugins: [solidPlugin()],
   root: "client",
   server: {
-    port: 5173,
+    port: clientPort,
     proxy: {
-      "/api": "http://127.0.0.1:3000",
+      "/api": serverOrigin,
     },
   },
   build: {
@@ -15,4 +19,3 @@ export default defineConfig({
     emptyOutDir: true,
   },
 });
-

@@ -64,6 +64,7 @@ One line per requirement. Each is a testable statement. Namespaces: `DATA` (mode
 - **R-ING-002** The shared editor supports selection-lookup while editing.
 - **R-ING-003** Saving a Text indexes the words it contains (updates `appears-in` backlinks).
 - **R-ING-004** A Text's source type, title, and source metadata are set at ingest time and editable later.
+- **R-ING-005** Server request handling accepts bounded request bodies for JSON and file-ingest endpoints, with clear rejection when payloads exceed configured limits.
 
 ## Ingestion — teacher lessons
 
@@ -79,6 +80,7 @@ One line per requirement. Each is a testable statement. Namespaces: `DATA` (mode
 - **R-ING-203** Keyboard shortcuts: Space = play/pause, ← = back 3s, → = forward 3s, Tab = new line.
 - **R-ING-204** Optional reveal-after-commit mode: a hidden Whisper transcription is revealed line-by-line only after the user commits their own line.
 - **R-ING-205** The resulting Text is tagged `source: podcast` with episode metadata.
+- **R-ING-206** Podcast upload handling does not buffer unbounded audio responses or request bodies in memory.
 
 ## Ingestion — book OCR
 

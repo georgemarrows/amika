@@ -8,7 +8,7 @@
     "dev:server": "bun --watch server/src/index.ts",
     "build": "bun run build:client && bun run build:server",
     "build:client": "vite build --config vite.config.ts",
-    "build:server": "tsc -p server/tsconfig.json",
+    "build:server": "rm -rf dist/server && tsc -p server/tsconfig.json",
     "start": "bun dist/server/server/src/index.js",
     "test": "bun test ./client/src/home-view-model.test.ts ./server/src/app.test.ts",
     "test:client": "bun test ./client/src/home-view-model.test.ts",

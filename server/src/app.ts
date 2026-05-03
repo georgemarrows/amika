@@ -23,6 +23,32 @@ function json(data: unknown, init?: ResponseInit) {
   });
 }
 
+function methodNotAllowed(allowed: string[]) {
+  return new Response("Method not allowed", {
+    status: 405,
+    headers: {
+      allow: allowed.join(", "),
+      "content-type": "text/plain; charset=utf-8",
+    },
+  });
+}
+
+function isAllowed(request: Request, allowed: string[]) {
+  return allowed.includes(request.method);
+}
+
+function isNavigationRequest(request: Request, pathname: string) {
+  if (!isAllowed(request, ["GET", "HEAD"])) {
+    return false;
+  }
+
+  if (extname(pathname) !== "") {
+    return false;
+  }
+
+  return request.headers.get("accept")?.includes("text/html") ?? true;
+}
+
 async function serveStaticAsset(pathname: string) {
   const candidate = pathname === "/" ? "/index.html" : pathname;
   const safePath = normalize(candidate).replace(/^(\.\.[/\\])+/, "");
@@ -41,20 +67,39 @@ export function createApp() {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/health") {
+      if (!isAllowed(request, ["GET", "HEAD"])) {
+        return methodNotAllowed(["GET", "HEAD"]);
+      }
+
       return json({ ok: true });
     }
 
     if (url.pathname === "/api/home") {
+      if (!isAllowed(request, ["GET", "HEAD"])) {
+        return methodNotAllowed(["GET", "HEAD"]);
+      }
+
       return json(getHomePageData());
     }
 
-    if (request.method !== "GET") {
-      return new Response("Method not allowed", { status: 405 });
+    if (url.pathname.startsWith("/api/")) {
+      return json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (!isAllowed(request, ["GET", "HEAD"])) {
+      return methodNotAllowed(["GET", "HEAD"]);
     }
 
     try {
       return await serveStaticAsset(url.pathname);
     } catch {
+      if (!isNavigationRequest(request, url.pathname)) {
+        return new Response("Not found", {
+          status: 404,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
+
       try {
         return await serveStaticAsset("/index.html");
       } catch {
