@@ -2,6 +2,8 @@
 
 Sequenced implementation plan. Each task cites the requirement IDs it covers. Mark tasks `[ ]` → `[x]` as they land.
 
+
+
 ## Phase 0 — Prototype (current state)
 
 - [x] T-0000 Single-file HTML prototype: tiling panes, command palette, inline SRS, selection lookup, Kanji-Damage-style kanji page, confusable compare. Seed data for a lesson, podcast snippet, and book reading.
@@ -12,7 +14,17 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 Goal: stop being a single HTML file; have a real dictionary and persistent storage.
 
 - [x] T-1000 Project scaffolding: pick stack (TypeScript + Solid; SQLite via a small Node/Bun server).
-- [ ] T-1010 Kanji Damage ingestion: load into SQLite with indices on character and readings. · R-DICT-002
+
+The following 1010 subtasks reference T1010_detailed_design.md.
+- [ ] T-1010a Minimal DB + one-kanji import: add `better-sqlite3`, DB adapter, migration runner, `.var/amika.sqlite`, `.var/media`; create minimal source/media/kanji schema; add a CLI importer that can load enough Kanji Damage data to fetch `具`. · R-DICT-002, R-DICT-005, R-PERS-001
+- [ ] T-1010b First kanji API + UI pane: implement `GET /api/kanji/:literal` with literal, meaning, stroke count, usefulness, frequency rank, and stroke image; add/modify UI so a kanji detail view can open using real imported data. · R-DICT-002, R-UX-001..005, R-UX-009, R-CMP-001
+- [ ] T-1010c Readings + mnemonics: add kanji readings and mnemonics tables; parse Kanji Damage onyomi, mnemonic, first kunyomi, and useful full mnemonic HTML; sanitize rendered HTML; extend the kanji endpoint and UI. · R-DATA-002, R-DICT-002, R-CMP-001
+- [ ] T-1010d Components: add component primitives and kanji components; parse Kanji Damage components, including image/symbol primitives and variant forms; expose and render components near the top of the kanji UI. · R-DATA-002, R-DICT-002, R-CMP-001
+- [ ] T-1010e Jukugo words: add generic words, word-kanji links, and word meanings; parse Kanji Damage first/full jukugo; expose words through the kanji endpoint and render them in the UI. · R-DATA-001, R-DATA-002, R-DATA-006, R-DICT-002
+- [ ] T-1010f Relations: add kanji relations; parse Kanji Damage lookalikes and used-in data; expose relations through the kanji endpoint and render compact related-kanji sections. · R-DATA-002, R-DATA-006, R-CMP-001..003, R-DICT-002
+- [ ] T-1010g Full import hardening: make the APKG import idempotent, transactional, and repeatable across the full deck; add import summaries, parser fixtures/tests, error reporting, and media cleanup behavior. · R-DICT-002, R-DICT-005, R-PERS-001
+
+## Phase 1.5 - following "tasks" need review
 - [ ] T-1020 Initial user interface for home page and kanji management (see docs/prototype.html)
 - [ ] T-1030 Local JMdict ingestion: download jmdict-simplified, load into SQLite with indices on headword, reading, and English gloss. · R-DICT-001, R-DICT-005
 - [ ] T-1040 Lookup API: `lookup(text) → {reading, meaning, jmdictId?}`; prefer exact, fall back to reading match. · R-LOOK-005, R-DICT-001
