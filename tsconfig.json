@@ -5,6 +5,5 @@
     "jsxImportSource": "solid-js",
     "types": ["bun-types"]
   },
-  "include": ["client/src/**/*.test.tsx", "server/src/**/*.test.ts"]
+  "include": ["client/src/**/*.test.tsx", "server/src/**/*.test.ts", "scripts/**/*.ts"]
 }
-

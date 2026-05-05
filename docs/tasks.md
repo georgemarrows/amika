@@ -16,7 +16,7 @@ Goal: stop being a single HTML file; have a real dictionary and persistent stora
 - [x] T-1000 Project scaffolding: pick stack (TypeScript + Solid; SQLite via a small Node/Bun server).
 
 The following 1010 subtasks reference T1010_detailed_design.md.
-- [ ] T-1010a Minimal DB + one-kanji import: add `better-sqlite3`, DB adapter, migration runner, `.var/amika.sqlite`, `.var/media`; create minimal source/media/kanji schema; add a CLI importer that can load enough Kanji Damage data to fetch `具`. · R-DICT-002, R-DICT-005, R-PERS-001
+- [x] T-1010a Minimal DB + one-kanji import: add `better-sqlite3`, DB adapter, migration runner, `.var/amika.sqlite`, `.var/media`; create minimal source/media/kanji schema; add a CLI importer that can load enough Kanji Damage data to fetch `具`. · R-DICT-002, R-DICT-005, R-PERS-001
 - [ ] T-1010b First kanji API + UI pane: implement `GET /api/kanji/:literal` with literal, meaning, stroke count, usefulness, frequency rank, and stroke image; add/modify UI so a kanji detail view can open using real imported data. · R-DICT-002, R-UX-001..005, R-UX-009, R-CMP-001
 - [ ] T-1010c Readings + mnemonics: add kanji readings and mnemonics tables; parse Kanji Damage onyomi, mnemonic, first kunyomi, and useful full mnemonic HTML; sanitize rendered HTML; extend the kanji endpoint and UI. · R-DATA-002, R-DICT-002, R-CMP-001
 - [ ] T-1010d Components: add component primitives and kanji components; parse Kanji Damage components, including image/symbol primitives and variant forms; expose and render components near the top of the kanji UI. · R-DATA-002, R-DICT-002, R-CMP-001
