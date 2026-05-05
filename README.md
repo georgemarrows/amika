@@ -60,7 +60,7 @@ Expected output:
 具|tool|8|683|★★★★☆
 ```
 
-The DB/import scripts run through Node with `tsx` because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.
+The DB/import scripts and local HTTP server run through Node because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.
 
 ## Project Docs
 

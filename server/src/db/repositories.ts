@@ -225,3 +225,46 @@ export function getKanjiByLiteral(db: Db, literal: string): KanjiRow | null {
       : null,
   };
 }
+
+export function getMediaAssetById(db: Db, id: string): MediaAssetRow | null {
+  const row = db
+    .prepare(
+      `
+      select
+        id,
+        source_deck_id,
+        source_media_key,
+        file_name,
+        content_type,
+        file_hash,
+        storage_path
+      from media_assets
+      where id = ?
+      `,
+    )
+    .get(id) as
+    | {
+        id: string;
+        source_deck_id: string;
+        source_media_key: string;
+        file_name: string;
+        content_type: string | null;
+        file_hash: string | null;
+        storage_path: string;
+      }
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    sourceDeckId: row.source_deck_id,
+    sourceMediaKey: row.source_media_key,
+    fileName: row.file_name,
+    contentType: row.content_type,
+    fileHash: row.file_hash,
+    storagePath: row.storage_path,
+  };
+}

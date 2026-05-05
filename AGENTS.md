@@ -19,3 +19,7 @@
 - bun for JS tooling and server (but no runtime dependencies on Bun-specific APIs)
 - SQLite for data storage
 
+
+## CSS
+- Use CSS custom properties for repeated colors, spacing, dimensions, borders, and radii. Prefer using these custom proporties, even for one-off values, to keep the visual language consistent and refactorable.
+

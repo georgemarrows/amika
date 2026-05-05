@@ -3,6 +3,7 @@ export type { Db, OpenDatabaseOptions } from "./connection.js";
 export { defaultMigrationsDir, runMigrations } from "./migrations.js";
 export type { MigrationResult } from "./migrations.js";
 export {
+  getMediaAssetById,
   getKanjiByLiteral,
   upsertKanji,
   upsertMediaAsset,
