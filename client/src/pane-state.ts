@@ -1,3 +1,5 @@
+import { createSignal, type Accessor } from "solid-js";
+
 export const homePaneKey = "home";
 
 export type PaneKey = typeof homePaneKey | `kanji:${string}` | "review" | "list-kanji";
@@ -9,8 +11,28 @@ export type PaneDescriptor = {
   className?: string;
 };
 
+export type PaneState = {
+  panes: Accessor<PaneKey[]>;
+  openFromPane: (key: PaneKey, paneIndex: number) => void;
+  openFromRoot: (key: PaneKey) => void;
+  close: (key: PaneKey) => void;
+  closeRightmost: () => void;
+};
+
 export function createInitialPaneKeys(): PaneKey[] {
   return [homePaneKey];
+}
+
+export function createPaneState(initialPanes: PaneKey[] = createInitialPaneKeys()): PaneState {
+  const [panes, setPanes] = createSignal<PaneKey[]>(initialPanes);
+
+  return {
+    panes,
+    openFromPane: (key, paneIndex) => setPanes((current) => openPane(current, key, paneIndex)),
+    openFromRoot: (key) => setPanes((current) => openPane(current, key)),
+    close: (key) => setPanes((current) => closePane(current, key)),
+    closeRightmost: () => setPanes(closeRightmostPane),
+  };
 }
 
 export function describePane(key: PaneKey): PaneDescriptor {

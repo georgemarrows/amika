@@ -1,15 +1,12 @@
-import { For, Match, Show, Switch, createEffect, createResource, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Match, Show, Switch, createEffect, createResource, onCleanup, onMount } from "solid-js";
 
 import type { HomePageData } from "../../shared/home-data";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail";
 import { createKanjiDetailViewModel } from "./kanji-detail-view-model";
 import {
   type PaneKey,
-  closePane,
-  closeRightmostPane,
-  createInitialPaneKeys,
+  createPaneState,
   describePane,
-  openPane,
 } from "./pane-state";
 
 async function fetchHomePageData(): Promise<HomePageData> {
@@ -214,14 +211,12 @@ function PaneBody(props: PaneBodyProps) {
 
 function PaneShell(props: { state: HomePageData }) {
   let panesElement: HTMLDivElement | undefined;
-  const [panes, setPanes] = createSignal<PaneKey[]>(createInitialPaneKeys());
-  const openFromPane = (key: PaneKey, paneIndex: number) => setPanes((current) => openPane(current, key, paneIndex));
-  const openFromSidebar = (key: PaneKey) => setPanes((current) => openPane(current, key));
+  const paneState = createPaneState();
 
   onMount(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setPanes(closeRightmostPane);
+        paneState.closeRightmost();
       }
     };
 
@@ -230,7 +225,7 @@ function PaneShell(props: { state: HomePageData }) {
   });
 
   createEffect(() => {
-    panes();
+    paneState.panes();
     queueMicrotask(() => panesElement?.lastElementChild?.scrollIntoView({ inline: "end", behavior: "smooth" }));
   });
 
@@ -242,10 +237,10 @@ function PaneShell(props: { state: HomePageData }) {
         </div>
 
         <nav class="nav">
-          <button class="nav-item" type="button" onClick={() => openFromSidebar("home")}>
+          <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("home")}>
             Home
           </button>
-          <button class="nav-item" type="button" onClick={() => openFromSidebar("review")}>
+          <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("review")}>
             <span>Review</span>
             <span class="badge">{props.state.review.dueCount}</span>
           </button>
@@ -256,7 +251,7 @@ function PaneShell(props: { state: HomePageData }) {
           <button class="nav-item nav-item-dim" type="button">
             Words
           </button>
-          <button class="nav-item" type="button" onClick={() => openFromSidebar("list-kanji")}>
+          <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("list-kanji")}>
             Kanji
           </button>
           <button class="nav-item nav-item-dim" type="button">
@@ -269,7 +264,7 @@ function PaneShell(props: { state: HomePageData }) {
       </aside>
 
       <main class="panes" ref={panesElement}>
-        <For each={panes()}>
+        <For each={paneState.panes()}>
           {(paneKey, index) => {
             const descriptor = describePane(paneKey);
 
@@ -280,7 +275,7 @@ function PaneShell(props: { state: HomePageData }) {
                     <span class="pill">{descriptor.pill}</span>
                     <span class="jp">{descriptor.title}</span>
                   </div>
-                  <button class="close" type="button" onClick={() => setPanes((current) => closePane(current, paneKey))}>
+                  <button class="close" type="button" onClick={() => paneState.close(paneKey)}>
                     ×
                   </button>
                 </header>
@@ -289,7 +284,7 @@ function PaneShell(props: { state: HomePageData }) {
                     paneKey={paneKey}
                     state={props.state}
                     paneIndex={index()}
-                    openFromPane={openFromPane}
+                    openFromPane={paneState.openFromPane}
                   />
                 </div>
               </section>

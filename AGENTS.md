@@ -21,5 +21,8 @@
 
 
 ## CSS
-- Use CSS custom properties for repeated colors, spacing, dimensions, borders, and radii. Prefer using these custom proporties, even for one-off values, to keep the visual language consistent and refactorable.
+- Use CSS custom properties for repeated colors, spacing, dimensions, borders, and radii. Prefer using these custom properties, even for one-off values, to keep the visual language consistent and refactorable.
 
+
+## Client state
+- Prefer specialized state helper factories over exported singleton signals for shared UI state.

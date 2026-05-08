@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { closePane, closeRightmostPane, createInitialPaneKeys, openPane } from "./pane-state";
+import { closePane, closeRightmostPane, createInitialPaneKeys, createPaneState, openPane } from "./pane-state";
 
 describe("pane state", () => {
   test("starts with the home pane", () => {
@@ -27,5 +27,18 @@ describe("pane state", () => {
   test("closes the rightmost pane", () => {
     expect(closeRightmostPane(["home", "kanji:具", "review"])).toEqual(["home", "kanji:具"]);
     expect(closeRightmostPane(["home"])).toEqual(["home"]);
+  });
+
+  test("provides a specialized Solid state helper without a singleton", () => {
+    const state = createPaneState();
+
+    state.openFromRoot("kanji:具");
+    expect(state.panes()).toEqual(["home", "kanji:具"]);
+
+    state.openFromPane("review", 0);
+    expect(state.panes()).toEqual(["home", "review"]);
+
+    state.closeRightmost();
+    expect(state.panes()).toEqual(["home"]);
   });
 });
