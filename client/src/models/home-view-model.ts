@@ -1,4 +1,4 @@
-import type { HomePageData } from "../../shared/home-data";
+import type { HomePageData } from "../../../shared/home-data";
 
 export type HomePageViewModel = {
   reviewHeadline: string;
@@ -15,4 +15,3 @@ export function createHomePageViewModel(data: HomePageData): HomePageViewModel {
     explorationTitles: data.explorationCards.map((item) => item.title),
   };
 }
-

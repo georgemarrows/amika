@@ -1,7 +1,7 @@
 import { For } from "solid-js";
 
 import type { HomePageData } from "../../shared/home-data";
-import { createHomePageViewModel } from "./home-view-model";
+import { createHomePageViewModel } from "./models/home-view-model";
 
 type HomePageProps = {
   state: HomePageData;

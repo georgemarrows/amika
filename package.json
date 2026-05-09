@@ -13,7 +13,7 @@
     "build:server": "rm -rf dist/server && tsc -p server/tsconfig.json",
     "start": "node dist/server/server/src/index.js",
     "test": "bun run test:client && bun run test:server && bun run test:db",
-    "test:client": "bun test ./client/src/*.test.ts",
+    "test:client": "bun test ./client/src/**/*.test.ts",
     "test:server": "node --import tsx --test ./server/src/app.test.ts",
     "test:db": "node --import tsx --test ./server/src/db/*.test.ts ./scripts/*.test.ts",
     "typecheck": "tsc -p client/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit && tsc -p tsconfig.json --noEmit"

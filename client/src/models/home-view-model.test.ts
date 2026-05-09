@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { getHomePageData } from "../../shared/home-data";
+import { getHomePageData } from "../../../shared/home-data";
 import { createHomePageViewModel } from "./home-view-model";
 
 describe("createHomePageViewModel", () => {
@@ -13,4 +13,3 @@ describe("createHomePageViewModel", () => {
     expect(model.explorationTitles).toContain("Confusables to watch");
   });
 });
-

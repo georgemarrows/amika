@@ -1,4 +1,4 @@
-import type { WordDetailResponse, WordKanjiLink } from "../../shared/word-detail";
+import type { WordDetailResponse, WordKanjiLink } from "../../../shared/word-detail";
 
 export type WordDetailViewModel = {
   id: string;

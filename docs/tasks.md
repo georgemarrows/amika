@@ -21,8 +21,8 @@ The following 1010 subtasks reference T1010_detailed_design.md.
 - [ ] T-1010c Readings + mnemonics: add kanji readings and mnemonics tables; parse Kanji Damage onyomi, mnemonic, first kunyomi, and useful full mnemonic HTML; sanitize rendered HTML; extend the kanji endpoint and UI. · R-DATA-002, R-DICT-002, R-CMP-001
 - [ ] T-1010d Components: add component primitives and kanji components; parse Kanji Damage components, including image/symbol primitives and variant forms; expose and render components near the top of the kanji UI. · R-DATA-002, R-DICT-002, R-CMP-001
 - [x] T-1010e Jukugo words: add generic words, word-kanji links, and word meanings; parse Kanji Damage first/full jukugo; expose words through the kanji endpoint and render them in the UI. · R-DATA-001, R-DATA-002, R-DATA-006, R-DICT-002
-- [ ] T-1010ea Refactor client code
-- [ ] T-1010eb Move tests?
+- [x] T-1010ea Refactor client code
+- [x] T-1010eb Move tests?
 - [ ] T-1010ec Explore simplifications for backend, Tanstack etc
 - [ ] T-1010ed Clean up this task list
 - [ ] T-1010f Relations: add kanji relations; parse Kanji Damage lookalikes and used-in data; expose relations through the kanji endpoint and render compact related-kanji sections. · R-DATA-002, R-DATA-006, R-CMP-001..003, R-DICT-002

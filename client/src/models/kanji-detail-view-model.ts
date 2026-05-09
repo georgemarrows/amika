@@ -1,4 +1,4 @@
-import type { KanjiDetailResponse, KanjiWordSummary, MediaAsset } from "../../shared/kanji-detail";
+import type { KanjiDetailResponse, KanjiWordSummary, MediaAsset } from "../../../shared/kanji-detail";
 
 export type KanjiMetadataItem = {
   label: string;
