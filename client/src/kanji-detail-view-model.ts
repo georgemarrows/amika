@@ -1,4 +1,4 @@
-import type { KanjiDetailResponse, MediaAsset } from "../../shared/kanji-detail";
+import type { KanjiDetailResponse, KanjiWordSummary, MediaAsset } from "../../shared/kanji-detail";
 
 export type KanjiMetadataItem = {
   label: string;
@@ -10,6 +10,7 @@ export type KanjiDetailViewModel = {
   meaning: string;
   metadata: KanjiMetadataItem[];
   strokeOrderImage: MediaAsset | null;
+  words: KanjiWordSummary[];
   emptyFutureSections: string;
 };
 
@@ -25,6 +26,7 @@ export function createKanjiDetailViewModel(detail: KanjiDetailResponse): KanjiDe
     meaning: detail.meaning,
     metadata,
     strokeOrderImage: detail.strokeOrderImage,
-    emptyFutureSections: "Readings, components, mnemonics, words, and relations are not imported for this entry yet.",
+    words: detail.words,
+    emptyFutureSections: "Readings, components, mnemonics, and relations are not imported for this entry yet.",
   };
 }

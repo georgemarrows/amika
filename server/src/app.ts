@@ -3,14 +3,18 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 
 import { getHomePageData } from "../../shared/home-data.js";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail.js";
+import type { WordDetailResponse } from "../../shared/word-detail.js";
 import {
   defaultDatabasePath,
   getKanjiByLiteral,
   getMediaAssetById,
+  getWordById,
+  getWordsForKanji,
   openDatabase,
   type Db,
   type KanjiRow,
   type MediaAssetRow,
+  type WordDetailRow,
 } from "./db/index.js";
 
 const clientDistDir = join(process.cwd(), "dist", "client");
@@ -110,7 +114,7 @@ function mediaUrl(media: MediaAssetRow) {
   return `/api/media/${encodeURIComponent(media.id)}`;
 }
 
-function toKanjiDetailResponse(kanji: KanjiRow): KanjiDetailResponse {
+function toKanjiDetailResponse(db: Db, kanji: KanjiRow): KanjiDetailResponse {
   return {
     literal: kanji.literal,
     meaning: kanji.primaryMeaning,
@@ -127,8 +131,23 @@ function toKanjiDetailResponse(kanji: KanjiRow): KanjiDetailResponse {
     components: [],
     readings: [],
     mnemonics: [],
-    words: [],
+    words: getWordsForKanji(db, kanji.literal),
     relations: [],
+  };
+}
+
+function toWordDetailResponse(word: WordDetailRow): WordDetailResponse {
+  return {
+    id: word.id,
+    expression: word.expression,
+    reading: word.reading,
+    primaryMeaning: word.primaryMeaning,
+    usefulness: word.usefulness,
+    meanings: word.meanings.map((meaning) => meaning.meaning),
+    kanji: word.kanji.map((kanji) => ({
+      literal: kanji.literal,
+      meaning: kanji.meaning,
+    })),
   };
 }
 
@@ -177,9 +196,39 @@ async function serveKanji(request: Request, literal: string, options: CreateAppO
       return json({ error: "Kanji not found" }, { status: 404 });
     }
 
-    return json(toKanjiDetailResponse(kanji));
+    return json(toKanjiDetailResponse(handle.db, kanji));
   } catch {
     return json({ error: "Kanji database unavailable" }, { status: 503 });
+  } finally {
+    if (handle.close) {
+      handle.db.close();
+    }
+  }
+}
+
+async function serveWord(request: Request, id: string, options: CreateAppOptions) {
+  if (!isAllowed(request, ["GET", "HEAD"])) {
+    return methodNotAllowed(["GET", "HEAD"]);
+  }
+
+  let handle: ReturnType<typeof openRequestDb>;
+
+  try {
+    handle = openRequestDb(options);
+  } catch {
+    return json({ error: "Word database unavailable" }, { status: 503 });
+  }
+
+  try {
+    const word = getWordById(handle.db, id);
+
+    if (!word) {
+      return json({ error: "Word not found" }, { status: 404 });
+    }
+
+    return json(toWordDetailResponse(word));
+  } catch {
+    return json({ error: "Word database unavailable" }, { status: 503 });
   } finally {
     if (handle.close) {
       handle.db.close();
@@ -240,6 +289,12 @@ export function createApp(options: CreateAppOptions = {}) {
 
     if (kanjiLiteral !== null) {
       return serveKanji(request, kanjiLiteral, options);
+    }
+
+    const wordId = routeSegment(url.pathname, "/api/words/");
+
+    if (wordId !== null) {
+      return serveWord(request, wordId, options);
     }
 
     const mediaId = routeSegment(url.pathname, "/api/media/");

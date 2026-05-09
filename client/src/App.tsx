@@ -2,12 +2,14 @@ import { For, Match, Show, Switch, createEffect, createResource, onCleanup, onMo
 
 import type { HomePageData } from "../../shared/home-data";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail";
+import type { WordDetailResponse } from "../../shared/word-detail";
 import { createKanjiDetailViewModel } from "./kanji-detail-view-model";
 import {
   type PaneKey,
   createPaneState,
   describePane,
 } from "./pane-state";
+import { createWordDetailViewModel } from "./word-detail-view-model";
 
 async function fetchHomePageData(): Promise<HomePageData> {
   const response = await fetch("/api/home");
@@ -24,6 +26,16 @@ async function fetchKanjiDetail(literal: string): Promise<KanjiDetailResponse> {
 
   if (!response.ok) {
     throw new Error(`Failed to load kanji detail: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function fetchWordDetail(id: string): Promise<WordDetailResponse> {
+  const response = await fetch(`/api/words/${encodeURIComponent(id)}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load word detail: ${response.status}`);
   }
 
   return response.json();
@@ -125,7 +137,7 @@ function KanjiListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFromPane">)
   );
 }
 
-function KanjiPane(props: { literal: string }) {
+function KanjiPane(props: { literal: string; paneIndex: number; openFromPane: (key: PaneKey, paneIndex: number) => void }) {
   const [detail] = createResource(() => props.literal, fetchKanjiDetail);
 
   return (
@@ -182,8 +194,111 @@ function KanjiPane(props: { literal: string }) {
               </section>
 
               <section class="section">
+                <h4>Words</h4>
+                <Show when={model.words.length > 0} fallback={<div class="muted">No words imported for this kanji yet.</div>}>
+                  <div class="word-list">
+                    <For each={model.words}>
+                      {(word) => (
+                        <button
+                          class="word-row"
+                          type="button"
+                          onClick={() => props.openFromPane(`word:${word.id}`, props.paneIndex)}
+                        >
+                          <span>
+                            <span class="jp word-expression">{word.expression}</span>
+                            <span class="jp word-reading">{word.reading ?? "Unknown"}</span>
+                          </span>
+                          <span class="word-meaning">{word.meaning ?? "Unknown"}</span>
+                          <Show when={word.usefulness}>
+                            {(usefulness) => <span class="word-stars">{usefulness()}</span>}
+                          </Show>
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </section>
+
+              <section class="section">
                 <h4>Next details</h4>
                 <div class="mnemonic">{model.emptyFutureSections}</div>
+              </section>
+            </>
+          );
+        }}
+      </Match>
+    </Switch>
+  );
+}
+
+function WordPane(props: { id: string; paneIndex: number; openFromPane: (key: PaneKey, paneIndex: number) => void }) {
+  const [detail] = createResource(() => props.id, fetchWordDetail);
+
+  return (
+    <Switch>
+      <Match when={detail.error}>
+        <div class="empty-state">
+          <p class="status-label">Word unavailable</p>
+          <h2>{props.id}</h2>
+          <p>Re-run the Kanji Damage import for T-1010e and refresh.</p>
+        </div>
+      </Match>
+      <Match when={detail.loading}>
+        <div class="empty-state">
+          <p class="status-label">Loading</p>
+          <h2>{props.id}</h2>
+        </div>
+      </Match>
+      <Match when={detail()}>
+        {(loadedDetail) => {
+          const model = createWordDetailViewModel(loadedDetail());
+
+          return (
+            <>
+              <div class="hero">
+                <div class="section-title jp">{model.expression}</div>
+              </div>
+              <div class="word-reading-large jp">{model.reading}</div>
+              <div class="kanji-meaning">{model.primaryMeaning}</div>
+              <div class="srs-btn">+ add to SRS</div>
+
+              <section class="section">
+                <h4>Metadata</h4>
+                <div class="metadata-grid">
+                  <div class="prop-row">
+                    <div class="k">Usefulness</div>
+                    <div class="v">{model.usefulness}</div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="section">
+                <h4>Meanings</h4>
+                <Show when={model.meanings.length > 0} fallback={<div class="muted">No meanings imported.</div>}>
+                  <div class="meaning-list">
+                    <For each={model.meanings}>{(meaning) => <div class="meaning-row">{meaning}</div>}</For>
+                  </div>
+                </Show>
+              </section>
+
+              <section class="section">
+                <h4>Kanji</h4>
+                <Show when={model.kanji.length > 0} fallback={<div class="muted">No kanji links imported.</div>}>
+                  <div class="kanji-chip-list">
+                    <For each={model.kanji}>
+                      {(kanji) => (
+                        <button
+                          class="kanji-chip"
+                          type="button"
+                          onClick={() => props.openFromPane(`kanji:${kanji.literal}`, props.paneIndex)}
+                        >
+                          <span class="jp">{kanji.literal}</span>
+                          <span>{kanji.meaning ?? "Unknown"}</span>
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </Show>
               </section>
             </>
           );
@@ -206,7 +321,23 @@ function PaneBody(props: PaneBodyProps) {
     return <KanjiListPane paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
   }
 
-  return <KanjiPane literal={props.paneKey.slice("kanji:".length)} />;
+  if (props.paneKey.startsWith("word:")) {
+    return (
+      <WordPane
+        id={props.paneKey.slice("word:".length)}
+        paneIndex={props.paneIndex}
+        openFromPane={props.openFromPane}
+      />
+    );
+  }
+
+  return (
+    <KanjiPane
+      literal={props.paneKey.slice("kanji:".length)}
+      paneIndex={props.paneIndex}
+      openFromPane={props.openFromPane}
+    />
+  );
 }
 
 function PaneShell(props: { state: HomePageData }) {

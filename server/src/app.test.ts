@@ -7,12 +7,17 @@ import { describe, test } from "node:test";
 import { createApp } from "./app.js";
 import {
   type Db,
+  getWordById,
+  insertKanjiStubIfMissing,
   openDatabase,
+  replaceWordKanji,
   runMigrations,
   upsertKanji,
   upsertMediaAsset,
   upsertSourceDeck,
   upsertSourceRecord,
+  upsertWord,
+  upsertWordMeaning,
 } from "./db/index.js";
 
 function seedKanjiDetail(db: Db, mediaRoot: string) {
@@ -56,6 +61,33 @@ function seedKanjiDetail(db: Db, mediaRoot: string) {
   });
 }
 
+function seedWordDetail(db: Db) {
+  insertKanjiStubIfMissing(db, {
+    literal: "道",
+    primaryMeaning: "street",
+    sourceRecordId: "record",
+    now: "2026-05-05T00:00:00.000Z",
+  });
+  upsertWord(db, {
+    id: "word-dogu",
+    expression: "道具",
+    reading: "どうぐ",
+    primaryMeaning: "tool",
+    usefulness: "★★★★☆",
+    now: "2026-05-05T00:00:00.000Z",
+  });
+  upsertWordMeaning(db, {
+    id: "word-dogu-meaning-tool",
+    wordId: "word-dogu",
+    meaning: "tool",
+    position: 0,
+  });
+  replaceWordKanji(db, "word-dogu", [
+    { wordId: "word-dogu", kanjiLiteral: "道", position: 0 },
+    { wordId: "word-dogu", kanjiLiteral: "具", position: 1 },
+  ]);
+}
+
 describe("server app", () => {
   test("reports health", async () => {
     const app = createApp();
@@ -81,6 +113,7 @@ describe("server app", () => {
 
     try {
       seedKanjiDetail(db, tempDir);
+      seedWordDetail(db);
       const app = createApp({ db, mediaRoot: tempDir });
       const response = await app(new Request("http://localhost/api/kanji/%E5%85%B7"));
       const body = await response.json();
@@ -100,12 +133,65 @@ describe("server app", () => {
         components: [],
         readings: [],
         mnemonics: [],
-        words: [],
+        words: [
+          {
+            id: "word-dogu",
+            expression: "道具",
+            reading: "どうぐ",
+            meaning: "tool",
+            usefulness: "★★★★☆",
+          },
+        ],
         relations: [],
       });
     } finally {
       db.close();
       rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns word detail data", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-word-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedKanjiDetail(db, tempDir);
+      seedWordDetail(db);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(new Request("http://localhost/api/words/word-dogu"));
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), {
+        id: "word-dogu",
+        expression: "道具",
+        reading: "どうぐ",
+        primaryMeaning: "tool",
+        usefulness: "★★★★☆",
+        meanings: ["tool"],
+        kanji: [
+          { literal: "道", meaning: "street" },
+          { literal: "具", meaning: "tool" },
+        ],
+      });
+      assert.ok(getWordById(db, "word-dogu"));
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns not found for missing words", async () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      const app = createApp({ db });
+      const response = await app(new Request("http://localhost/api/words/missing"));
+
+      assert.equal(response.status, 404);
+      assert.deepEqual(await response.json(), { error: "Word not found" });
+    } finally {
+      db.close();
     }
   });
 
@@ -149,10 +235,13 @@ describe("server app", () => {
 
     try {
       const kanjiResponse = await app(new Request("http://localhost/api/kanji/%E5%85%B7", { method: "POST" }));
+      const wordResponse = await app(new Request("http://localhost/api/words/word-dogu", { method: "POST" }));
       const mediaResponse = await app(new Request("http://localhost/api/media/media", { method: "POST" }));
 
       assert.equal(kanjiResponse.status, 405);
       assert.equal(kanjiResponse.headers.get("allow"), "GET, HEAD");
+      assert.equal(wordResponse.status, 405);
+      assert.equal(wordResponse.headers.get("allow"), "GET, HEAD");
       assert.equal(mediaResponse.status, 405);
       assert.equal(mediaResponse.headers.get("allow"), "GET, HEAD");
     } finally {

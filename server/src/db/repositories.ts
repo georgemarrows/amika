@@ -38,6 +38,35 @@ export type KanjiInput = {
   now: string;
 };
 
+export type KanjiStubInput = {
+  literal: string;
+  primaryMeaning: string;
+  sourceRecordId: string | null;
+  now: string;
+};
+
+export type WordInput = {
+  id: string;
+  expression: string;
+  reading: string | null;
+  primaryMeaning: string | null;
+  usefulness: string | null;
+  now: string;
+};
+
+export type WordMeaningInput = {
+  id: string;
+  wordId: string;
+  meaning: string;
+  position: number;
+};
+
+export type WordKanjiInput = {
+  wordId: string;
+  kanjiLiteral: string;
+  position: number;
+};
+
 export type MediaAssetRow = {
   id: string;
   sourceDeckId: string;
@@ -59,6 +88,38 @@ export type KanjiRow = {
   createdAt: string;
   updatedAt: string;
   strokeOrderMedia: MediaAssetRow | null;
+};
+
+export type WordSummaryRow = {
+  id: string;
+  expression: string;
+  reading: string | null;
+  meaning: string | null;
+  usefulness: string | null;
+};
+
+export type WordMeaningRow = {
+  id: string;
+  meaning: string;
+  position: number;
+};
+
+export type WordKanjiRow = {
+  literal: string;
+  meaning: string | null;
+  position: number;
+};
+
+export type WordDetailRow = {
+  id: string;
+  expression: string;
+  reading: string | null;
+  primaryMeaning: string | null;
+  usefulness: string | null;
+  createdAt: string;
+  updatedAt: string;
+  meanings: WordMeaningRow[];
+  kanji: WordKanjiRow[];
 };
 
 type KanjiQueryRow = {
@@ -170,6 +231,88 @@ export function upsertKanji(db: Db, input: KanjiInput) {
   `).run(input);
 }
 
+export function insertKanjiStubIfMissing(db: Db, input: KanjiStubInput) {
+  db.prepare(`
+    insert into kanji (
+      literal,
+      primary_meaning,
+      stroke_count,
+      stroke_order_media_id,
+      frequency_rank,
+      usefulness,
+      source_record_id,
+      created_at,
+      updated_at
+    )
+    values (
+      @literal,
+      @primaryMeaning,
+      null,
+      null,
+      null,
+      null,
+      @sourceRecordId,
+      @now,
+      @now
+    )
+    on conflict(literal) do nothing
+  `).run(input);
+}
+
+export function upsertWord(db: Db, input: WordInput) {
+  db.prepare(`
+    insert into words (
+      id,
+      expression,
+      reading,
+      primary_meaning,
+      usefulness,
+      created_at,
+      updated_at
+    )
+    values (
+      @id,
+      @expression,
+      @reading,
+      @primaryMeaning,
+      @usefulness,
+      @now,
+      @now
+    )
+    on conflict(id) do update set
+      expression = excluded.expression,
+      reading = excluded.reading,
+      primary_meaning = excluded.primary_meaning,
+      usefulness = excluded.usefulness,
+      updated_at = excluded.updated_at
+  `).run(input);
+}
+
+export function upsertWordMeaning(db: Db, input: WordMeaningInput) {
+  db.prepare(`
+    insert into word_meanings (id, word_id, meaning, position)
+    values (@id, @wordId, @meaning, @position)
+    on conflict(id) do update set
+      word_id = excluded.word_id,
+      meaning = excluded.meaning,
+      position = excluded.position
+  `).run(input);
+}
+
+export function replaceWordKanji(db: Db, wordId: string, links: WordKanjiInput[]) {
+  const deleteExisting = db.prepare("delete from word_kanji where word_id = ?");
+  const insertLink = db.prepare(`
+    insert into word_kanji (word_id, kanji_literal, position)
+    values (@wordId, @kanjiLiteral, @position)
+  `);
+
+  deleteExisting.run(wordId);
+
+  for (const link of links) {
+    insertLink.run(link);
+  }
+}
+
 export function getKanjiByLiteral(db: Db, literal: string): KanjiRow | null {
   const row = db
     .prepare(
@@ -223,6 +366,142 @@ export function getKanjiByLiteral(db: Db, literal: string): KanjiRow | null {
           storagePath: row.media_storage_path ?? "",
         }
       : null,
+  };
+}
+
+export function getWordsForKanji(db: Db, literal: string): WordSummaryRow[] {
+  return db
+    .prepare(
+      `
+      select
+        words.id,
+        words.expression,
+        words.reading,
+        words.primary_meaning,
+        words.usefulness,
+        min(words.rowid) as word_order
+      from word_kanji
+      join words on words.id = word_kanji.word_id
+      where word_kanji.kanji_literal = ?
+      group by
+        words.id,
+        words.expression,
+        words.reading,
+        words.primary_meaning,
+        words.usefulness
+      order by word_order, words.expression
+      `,
+    )
+    .all(literal)
+    .map((row) => {
+      const word = row as {
+        id: string;
+        expression: string;
+        reading: string | null;
+        primary_meaning: string | null;
+        usefulness: string | null;
+      };
+
+      return {
+        id: word.id,
+        expression: word.expression,
+        reading: word.reading,
+        meaning: word.primary_meaning,
+        usefulness: word.usefulness,
+      };
+    });
+}
+
+export function getWordById(db: Db, id: string): WordDetailRow | null {
+  const word = db
+    .prepare(
+      `
+      select
+        id,
+        expression,
+        reading,
+        primary_meaning,
+        usefulness,
+        created_at,
+        updated_at
+      from words
+      where id = ?
+      `,
+    )
+    .get(id) as
+    | {
+        id: string;
+        expression: string;
+        reading: string | null;
+        primary_meaning: string | null;
+        usefulness: string | null;
+        created_at: string;
+        updated_at: string;
+      }
+    | undefined;
+
+  if (!word) {
+    return null;
+  }
+
+  const meanings = db
+    .prepare(
+      `
+      select id, meaning, position
+      from word_meanings
+      where word_id = ?
+      order by position, meaning
+      `,
+    )
+    .all(id)
+    .map((row) => {
+      const meaning = row as { id: string; meaning: string; position: number };
+
+      return {
+        id: meaning.id,
+        meaning: meaning.meaning,
+        position: meaning.position,
+      };
+    });
+
+  const kanji = db
+    .prepare(
+      `
+      select
+        word_kanji.kanji_literal,
+        kanji.primary_meaning,
+        word_kanji.position
+      from word_kanji
+      join kanji on kanji.literal = word_kanji.kanji_literal
+      where word_kanji.word_id = ?
+      order by word_kanji.position, word_kanji.kanji_literal
+      `,
+    )
+    .all(id)
+    .map((row) => {
+      const linkedKanji = row as {
+        kanji_literal: string;
+        primary_meaning: string | null;
+        position: number;
+      };
+
+      return {
+        literal: linkedKanji.kanji_literal,
+        meaning: linkedKanji.primary_meaning,
+        position: linkedKanji.position,
+      };
+    });
+
+  return {
+    id: word.id,
+    expression: word.expression,
+    reading: word.reading,
+    primaryMeaning: word.primary_meaning,
+    usefulness: word.usefulness,
+    createdAt: word.created_at,
+    updatedAt: word.updated_at,
+    meanings,
+    kanji,
   };
 }
 

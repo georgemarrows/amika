@@ -11,12 +11,16 @@ import JSZip from "jszip";
 import {
   defaultDatabasePath,
   getKanjiByLiteral,
+  insertKanjiStubIfMissing,
   openDatabase,
+  replaceWordKanji,
   runMigrations,
   upsertKanji,
   upsertMediaAsset,
   upsertSourceDeck,
   upsertSourceRecord,
+  upsertWord,
+  upsertWordMeaning,
 } from "../server/src/db/index.js";
 import type { Db } from "../server/src/db/index.js";
 
@@ -56,8 +60,22 @@ export type ImportKanjiDamageSummary = {
   deckHash: string;
   dbPath: string;
   importedLiterals: string[];
+  importedWords: string[];
   mediaCopied: number;
   mediaReused: number;
+};
+
+export type ParsedKanjiDamageWord = {
+  id: string;
+  expression: string;
+  reading: string | null;
+  primaryMeaning: string | null;
+  usefulness: string | null;
+  meanings: string[];
+  kanji: Array<{
+    literal: string;
+    meaning: string | null;
+  }>;
 };
 
 type MediaImportResult = {
@@ -103,6 +121,18 @@ function sha256(buffer: Buffer | Uint8Array) {
   return createHash("sha256").update(buffer).digest("hex");
 }
 
+function sha256Text(value: string) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+export function buildWordId(expression: string, reading: string | null) {
+  return `word-${sha256Text(`${expression}${fieldSeparator}${reading ?? ""}`).slice(0, 16)}`;
+}
+
+function buildWordMeaningId(wordId: string, meaning: string) {
+  return `${wordId}-meaning-${sha256Text(meaning).slice(0, 16)}`;
+}
+
 function getContentType(fileName: string): string | null {
   switch (extname(fileName).toLowerCase()) {
     case ".gif":
@@ -133,6 +163,130 @@ export function findKanjiNote(notes: ParsedKanjiDamageNote[], literal: string): 
   }
 
   return note;
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replaceAll("&nbsp;", " ")
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll("&rsquo;", "'")
+    .replaceAll("&ldquo;", '"')
+    .replaceAll("&rdquo;", '"');
+}
+
+function stripHtml(html: string) {
+  return decodeHtmlEntities(html.replace(/<[^>]*>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function uniq(values: string[]) {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const value of values) {
+    if (!seen.has(value)) {
+      seen.add(value);
+      unique.push(value);
+    }
+  }
+
+  return unique;
+}
+
+function parseWordComponents(rowHtml: string) {
+  const components: ParsedKanjiDamageWord["kanji"] = [];
+  const componentPattern = /<a\b[^>]*class=["'][^"']*\bcomponent\b[^"']*["'][^>]*>([^<]+)<\/a>\s*\(([^)]*)\)/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = componentPattern.exec(rowHtml)) !== null) {
+    components.push({
+      literal: stripHtml(match[1]),
+      meaning: stripHtml(match[2]) || null,
+    });
+  }
+
+  return components;
+}
+
+function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
+  const expressionMatch = rowHtml.match(/<ruby>\s*([^<]+?)\s*<rp>\(<\/rp>\s*<rt>([^<]+)<\/rt>/i);
+
+  if (!expressionMatch) {
+    return null;
+  }
+
+  const expression = stripHtml(expressionMatch[1]);
+  const reading = stripHtml(expressionMatch[2]) || null;
+  const paragraphMatches = [...rowHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)].map((match) => match[1]);
+  const usefulness = stripHtml(
+    rowHtml.match(/<span\b[^>]*class=["'][^"']*\busefulness-stars\b[^"']*["'][^>]*>([^<]*)<\/span>/i)?.[1] ?? "",
+  ) || null;
+  const primaryMeaning = paragraphMatches[0]
+    ? stripHtml(paragraphMatches[0].split(/<span\b[^>]*class=["'][^"']*\busefulness-stars\b/i)[0])
+    : null;
+  const meanings = uniq(
+    [
+      primaryMeaning,
+      ...paragraphMatches.slice(1).map((paragraph) => stripHtml(paragraph)),
+    ].filter((meaning): meaning is string => Boolean(meaning)),
+  );
+
+  if (!expression) {
+    return null;
+  }
+
+  return {
+    id: buildWordId(expression, reading),
+    expression,
+    reading,
+    primaryMeaning,
+    usefulness,
+    meanings,
+    kanji: parseWordComponents(rowHtml),
+  };
+}
+
+function parseFirstJukugo(fields: KanjiDamageFields): ParsedKanjiDamageWord[] {
+  const firstJukugo = fields["First jukugo"] ?? "";
+  const match = firstJukugo.match(/>([^<[>\]]+)\[([^\]]+)\]</);
+
+  if (!match) {
+    return [];
+  }
+
+  const expression = stripHtml(match[1]);
+  const reading = stripHtml(match[2]) || null;
+  const primaryMeaning = stripHtml(fields["First jukugo meaning"] ?? "") || null;
+  const usefulness = stripHtml(fields["First jukugo usefulness"] ?? "") || null;
+
+  return [
+    {
+      id: buildWordId(expression, reading),
+      expression,
+      reading,
+      primaryMeaning,
+      usefulness,
+      meanings: primaryMeaning ? [primaryMeaning] : [],
+      kanji: [...expression].map((literal) => ({
+        literal,
+        meaning: null,
+      })),
+    },
+  ];
+}
+
+export function parseKanjiDamageWords(fields: KanjiDamageFields): ParsedKanjiDamageWord[] {
+  const fullJukugo = fields["Full jukugo"] ?? "";
+  const rows = [...fullJukugo.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)]
+    .map((match) => parseFullJukugoRow(match[1]))
+    .filter((word): word is ParsedKanjiDamageWord => word !== null);
+
+  return rows.length > 0 ? rows : parseFirstJukugo(fields);
 }
 
 async function extractApkg(apkgPath: string) {
@@ -272,6 +426,50 @@ function importKanjiRecord(params: {
   });
 }
 
+function importWordRecord(params: {
+  appDb: Db;
+  word: ParsedKanjiDamageWord;
+  sourceRecordId: string;
+  now: string;
+}) {
+  upsertWord(params.appDb, {
+    id: params.word.id,
+    expression: params.word.expression,
+    reading: params.word.reading,
+    primaryMeaning: params.word.primaryMeaning,
+    usefulness: params.word.usefulness,
+    now: params.now,
+  });
+
+  params.word.meanings.forEach((meaning, index) => {
+    upsertWordMeaning(params.appDb, {
+      id: buildWordMeaningId(params.word.id, meaning),
+      wordId: params.word.id,
+      meaning,
+      position: index,
+    });
+  });
+
+  params.word.kanji.forEach((kanji) => {
+    insertKanjiStubIfMissing(params.appDb, {
+      literal: kanji.literal,
+      primaryMeaning: kanji.meaning ?? "Unknown",
+      sourceRecordId: params.sourceRecordId,
+      now: params.now,
+    });
+  });
+
+  replaceWordKanji(
+    params.appDb,
+    params.word.id,
+    params.word.kanji.map((kanji, index) => ({
+      wordId: params.word.id,
+      kanjiLiteral: kanji.literal,
+      position: index,
+    })),
+  );
+}
+
 export async function importKanjiDamage(
   options: ImportKanjiDamageOptions,
 ): Promise<ImportKanjiDamageSummary> {
@@ -317,6 +515,7 @@ export async function importKanjiDamage(
       mediaReused = mediaResult.copied ? 0 : 1;
     }
 
+    const parsedWords = parseKanjiDamageWords(note.fields);
     const importOne = appDb.transaction(() => {
       importKanjiRecord({
         appDb,
@@ -325,6 +524,16 @@ export async function importKanjiDamage(
         mediaAssetId,
         now,
       });
+
+      const sourceRecordId = `${deckId}-note-${note.noteId}`;
+      for (const word of parsedWords) {
+        importWordRecord({
+          appDb,
+          word,
+          sourceRecordId,
+          now,
+        });
+      }
     });
     importOne();
 
@@ -339,6 +548,7 @@ export async function importKanjiDamage(
       deckHash,
       dbPath,
       importedLiterals: [literal],
+      importedWords: parsedWords.map((word) => word.expression),
       mediaCopied,
       mediaReused,
     };

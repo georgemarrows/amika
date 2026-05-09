@@ -421,7 +421,8 @@ code,
 }
 
 .stroke-placeholder,
-.empty-state p {
+.empty-state p,
+.muted {
   color: var(--color-dim);
 }
 
@@ -457,6 +458,81 @@ code,
 .dict .r {
   width: 80px;
   color: var(--color-dim);
+}
+
+.word-list,
+.meaning-list,
+.kanji-chip-list {
+  display: grid;
+  gap: var(--gap-sm);
+}
+
+.word-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(120px, 1fr) minmax(150px, 1.2fr) auto;
+  gap: var(--gap-md);
+  align-items: center;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--gap-md);
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.word-row:hover,
+.kanji-chip:hover {
+  border-color: var(--color-dimmer);
+  background: var(--color-bg-raised);
+}
+
+.word-expression {
+  display: block;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.word-reading,
+.word-stars {
+  color: var(--color-dim);
+  font-size: 12px;
+}
+
+.word-meaning {
+  min-width: 0;
+}
+
+.word-reading-large {
+  color: var(--color-dim);
+  font-size: 18px;
+}
+
+.meaning-row {
+  border-bottom: var(--border-width) solid var(--color-border);
+  padding: var(--gap-sm) 0;
+}
+
+.kanji-chip-list {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.kanji-chip {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--gap-sm) var(--gap-md);
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.kanji-chip .jp {
+  font-size: 20px;
 }
 
 .glyph-cell {

@@ -32,6 +32,40 @@ describe("createKanjiDetailViewModel", () => {
     expect(model.strokeOrderImage?.url).toBe("/api/media/media");
   });
 
+  test("exposes imported words for rendering", () => {
+    const model = createKanjiDetailViewModel({
+      literal: "具",
+      meaning: "tool",
+      strokeCount: 8,
+      usefulness: "★★★★☆",
+      frequencyRank: 683,
+      strokeOrderImage: null,
+      components: [],
+      readings: [],
+      mnemonics: [],
+      words: [
+        {
+          id: "word-dogu",
+          expression: "道具",
+          reading: "どうぐ",
+          meaning: "tool",
+          usefulness: "★★★★☆",
+        },
+      ],
+      relations: [],
+    });
+
+    expect(model.words).toEqual([
+      {
+        id: "word-dogu",
+        expression: "道具",
+        reading: "どうぐ",
+        meaning: "tool",
+        usefulness: "★★★★☆",
+      },
+    ]);
+  });
+
   test("uses clear placeholders for missing optional data", () => {
     const model = createKanjiDetailViewModel({
       literal: "美",

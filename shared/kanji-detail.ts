@@ -4,6 +4,14 @@ export type MediaAsset = {
   contentType: string | null;
 };
 
+export type KanjiWordSummary = {
+  id: string;
+  expression: string;
+  reading: string | null;
+  meaning: string | null;
+  usefulness: string | null;
+};
+
 export type KanjiDetailResponse = {
   literal: string;
   meaning: string;
@@ -14,6 +22,6 @@ export type KanjiDetailResponse = {
   components: [];
   readings: [];
   mnemonics: [];
-  words: [];
+  words: KanjiWordSummary[];
   relations: [];
 };

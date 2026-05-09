@@ -19,7 +19,7 @@ Minimal `T-1000` scaffold:
 
 The project uses a local SQLite database at `.var/amika.sqlite`. The `.var/` directory is runtime state and is intentionally ignored by version control.
 
-To rebuild the current T-1010a state from a fresh checkout:
+To rebuild the current T-1010e state from a fresh checkout:
 
 1. Install dependencies:
 
@@ -46,18 +46,23 @@ This creates:
 - `.var/amika.sqlite`
 - `.var/media/kanji-damage/<hash>.png`
 
-The importer currently loads the Kanji Damage note for `具`, its source provenance, minimal kanji metadata, and its stroke-order image. Future T-1010 tasks will extend the schema and importer for readings, mnemonics, components, words, and relations.
+The importer currently loads the Kanji Damage note for `具`, its source provenance, minimal kanji metadata, its stroke-order image, and its jukugo words. Word import includes readings, meanings, usefulness stars, word-kanji links, and minimal kanji stubs needed by those links. Future T-1010 tasks will extend the schema and importer for readings, mnemonics, components, and relations.
 
 To verify the current imported row:
 
 ```sh
 sqlite3 .var/amika.sqlite "select literal, primary_meaning, stroke_count, frequency_rank, usefulness from kanji where literal = '具';"
+sqlite3 .var/amika.sqlite "select expression, reading, primary_meaning, usefulness from words order by rowid;"
 ```
 
 Expected output:
 
 ```text
 具|tool|8|683|★★★★☆
+道具|どうぐ|tool|★★★★☆
+家具|かぐ|furniture|★★★☆☆
+具体的|ぐたいてき|concrete/ in practice|★★★☆☆
+具合|ぐあい|condition|★★★☆☆
 ```
 
 The DB/import scripts and local HTTP server run through Node because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.

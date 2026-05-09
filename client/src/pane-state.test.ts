@@ -9,10 +9,16 @@ describe("pane state", () => {
 
   test("opens a pane to the right", () => {
     expect(openPane(["home"], "kanji:具")).toEqual(["home", "kanji:具"]);
+    expect(openPane(["home", "kanji:具"], "word:word-dogu", 1)).toEqual(["home", "kanji:具", "word:word-dogu"]);
   });
 
   test("trims panes to the right of the source pane", () => {
     expect(openPane(["home", "kanji:具", "kanji:美"], "review", 0)).toEqual(["home", "review"]);
+    expect(openPane(["home", "kanji:具", "word:word-dogu"], "word:word-kagu", 1)).toEqual([
+      "home",
+      "kanji:具",
+      "word:word-kagu",
+    ]);
   });
 
   test("does not duplicate an already-visible pane", () => {
