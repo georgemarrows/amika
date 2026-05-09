@@ -110,6 +110,16 @@ export type WordSummaryRow = {
   usefulness: string | null;
 };
 
+export type KanjiListRow = {
+  literal: string;
+  meaning: string;
+  strokeCount: number | null;
+  frequencyRank: number | null;
+  usefulness: string | null;
+};
+
+export type WordListRow = WordSummaryRow;
+
 export type WordMeaningRow = {
   id: string;
   meaning: string;
@@ -429,6 +439,44 @@ export function getKanjiByLiteral(db: Db, literal: string): KanjiRow | null {
   };
 }
 
+export function listKanji(db: Db, limit: number): KanjiListRow[] {
+  return db
+    .prepare(
+      `
+      select
+        literal,
+        primary_meaning,
+        stroke_count,
+        frequency_rank,
+        usefulness
+      from kanji
+      order by
+        case when frequency_rank is null then 1 else 0 end,
+        frequency_rank,
+        literal
+      limit ?
+      `,
+    )
+    .all(limit)
+    .map((row) => {
+      const kanji = row as {
+        literal: string;
+        primary_meaning: string;
+        stroke_count: number | null;
+        frequency_rank: number | null;
+        usefulness: string | null;
+      };
+
+      return {
+        literal: kanji.literal,
+        meaning: kanji.primary_meaning,
+        strokeCount: kanji.stroke_count,
+        frequencyRank: kanji.frequency_rank,
+        usefulness: kanji.usefulness,
+      };
+    });
+}
+
 export function getKanjiReadings(db: Db, literal: string): KanjiReadingRow[] {
   return db
     .prepare(
@@ -495,6 +543,41 @@ export function getWordsForKanji(db: Db, literal: string): WordSummaryRow[] {
       `,
     )
     .all(literal)
+    .map((row) => {
+      const word = row as {
+        id: string;
+        expression: string;
+        reading: string | null;
+        primary_meaning: string | null;
+        usefulness: string | null;
+      };
+
+      return {
+        id: word.id,
+        expression: word.expression,
+        reading: word.reading,
+        meaning: word.primary_meaning,
+        usefulness: word.usefulness,
+      };
+    });
+}
+
+export function listWords(db: Db, limit: number): WordListRow[] {
+  return db
+    .prepare(
+      `
+      select
+        id,
+        expression,
+        reading,
+        primary_meaning,
+        usefulness
+      from words
+      order by expression, reading
+      limit ?
+      `,
+    )
+    .all(limit)
     .map((row) => {
       const word = row as {
         id: string;

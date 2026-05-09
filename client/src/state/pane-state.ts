@@ -2,7 +2,13 @@ import { createSignal, type Accessor } from "solid-js";
 
 export const homePaneKey = "home";
 
-export type PaneKey = typeof homePaneKey | `kanji:${string}` | `word:${string}` | "review" | "list-kanji";
+export type PaneKey =
+  | typeof homePaneKey
+  | `kanji:${string}`
+  | `word:${string}`
+  | "review"
+  | "list-kanji"
+  | "list-words";
 
 export type PaneDescriptor = {
   key: PaneKey;
@@ -46,6 +52,10 @@ export function describePane(key: PaneKey): PaneDescriptor {
 
   if (key === "list-kanji") {
     return { key, title: "All kanji", pill: "index" };
+  }
+
+  if (key === "list-words") {
+    return { key, title: "All words", pill: "index" };
   }
 
   if (key.startsWith("word:")) {

@@ -2,6 +2,7 @@ import { HomePane } from "./HomePane";
 import { KanjiListPane } from "./KanjiListPane";
 import { KanjiPane } from "./KanjiPane";
 import { ReviewPane } from "./ReviewPane";
+import { WordListPane } from "./WordListPane";
 import { WordPane } from "./WordPane";
 import type { PaneBodyProps } from "./pane-props";
 
@@ -16,6 +17,10 @@ export function PaneBody(props: PaneBodyProps) {
 
   if (props.paneKey === "list-kanji") {
     return <KanjiListPane paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
+  }
+
+  if (props.paneKey === "list-words") {
+    return <WordListPane paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
   }
 
   if (props.paneKey.startsWith("word:")) {

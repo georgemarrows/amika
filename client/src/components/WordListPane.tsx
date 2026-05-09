@@ -1,41 +1,41 @@
 import { For, Match, Show, Switch, createResource } from "solid-js";
 
-import { fetchKanjiList } from "../api";
+import { fetchWordList } from "../api";
 import type { PaneBodyProps } from "./pane-props";
 
-export function KanjiListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFromPane">) {
-  const [list] = createResource(fetchKanjiList);
+export function WordListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFromPane">) {
+  const [list] = createResource(fetchWordList);
 
   return (
     <Switch>
       <Match when={list.error}>
         <div class="empty-state">
-          <p class="status-label">Kanji unavailable</p>
-          <h2>All kanji</h2>
+          <p class="status-label">Words unavailable</p>
+          <h2>All words</h2>
           <p>Run the migrate/import flow and refresh.</p>
         </div>
       </Match>
       <Match when={list.loading}>
         <div class="empty-state">
           <p class="status-label">Loading</p>
-          <h2>All kanji</h2>
+          <h2>All words</h2>
         </div>
       </Match>
       <Match when={list()}>
         {(loadedList) => (
           <>
             <div class="hero">
-              <div class="section-title">Kanji · {loadedList().items.length}</div>
+              <div class="section-title">Words · {loadedList().items.length}</div>
             </div>
-            <Show when={loadedList().items.length > 0} fallback={<div class="muted">No kanji imported yet.</div>}>
+            <Show when={loadedList().items.length > 0} fallback={<div class="muted">No words imported yet.</div>}>
               <table class="dict">
                 <tbody>
                   <For each={loadedList().items}>
-                    {(kanji) => (
-                      <tr onClick={() => props.openFromPane(`kanji:${kanji.literal}`, props.paneIndex)}>
-                        <td class="jp glyph-cell">{kanji.literal}</td>
-                        <td>{kanji.meaning}</td>
-                        <td class="r">{kanji.strokeCount === null ? "" : `${kanji.strokeCount} strokes`}</td>
+                    {(word) => (
+                      <tr onClick={() => props.openFromPane(`word:${word.id}`, props.paneIndex)}>
+                        <td class="jp">{word.expression}</td>
+                        <td class="jp">{word.reading ?? ""}</td>
+                        <td>{word.meaning ?? "Unknown"}</td>
                       </tr>
                     )}
                   </For>

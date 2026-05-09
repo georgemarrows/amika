@@ -170,6 +170,33 @@ describe("server app", () => {
     }
   });
 
+  test("returns the first kanji list rows", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-kanji-list-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedKanjiDetail(db, tempDir);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(new Request("http://localhost/api/kanji"));
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), {
+        items: [
+          {
+            literal: "具",
+            meaning: "tool",
+            strokeCount: 8,
+            frequencyRank: 683,
+            usefulness: "★★★★☆",
+          },
+        ],
+      });
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   test("returns word detail data", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "amika-word-app-test-"));
     const db = openDatabase({ path: ":memory:" });
@@ -194,6 +221,34 @@ describe("server app", () => {
         ],
       });
       assert.ok(getWordById(db, "word-dogu"));
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns the first word list rows", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-word-list-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedKanjiDetail(db, tempDir);
+      seedWordDetail(db);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(new Request("http://localhost/api/words"));
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), {
+        items: [
+          {
+            id: "word-dogu",
+            expression: "道具",
+            reading: "どうぐ",
+            meaning: "tool",
+            usefulness: "★★★★☆",
+          },
+        ],
+      });
     } finally {
       db.close();
       rmSync(tempDir, { recursive: true, force: true });

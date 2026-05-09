@@ -10,6 +10,8 @@ import {
   getWordById,
   getWordsForKanji,
   insertKanjiStubIfMissing,
+  listKanji,
+  listWords,
   openDatabase,
   replaceKanjiReadings,
   replaceWordKanji,
@@ -185,6 +187,82 @@ describe("kanji repository", () => {
       assert.equal(getKanjiByLiteral(db, "具")?.primaryMeaning, "tool");
       assert.equal(getKanjiByLiteral(db, "道")?.primaryMeaning, "street");
       assert.equal(getKanjiByLiteral(db, "道")?.strokeCount, null);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("lists kanji in frequency order with a limit", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertKanji(db, {
+        literal: "具",
+        primaryMeaning: "tool",
+        strokeCount: 8,
+        strokeOrderMediaId: null,
+        frequencyRank: 683,
+        usefulness: "★★★★☆",
+        sourceRecordId: null,
+        now: "2026-05-05T00:00:00.000Z",
+      });
+      upsertKanji(db, {
+        literal: "日",
+        primaryMeaning: "sun, day",
+        strokeCount: 4,
+        strokeOrderMediaId: null,
+        frequencyRank: 1,
+        usefulness: "★★★★★",
+        sourceRecordId: null,
+        now: "2026-05-05T00:00:00.000Z",
+      });
+
+      assert.deepEqual(listKanji(db, 1), [
+        {
+          literal: "日",
+          meaning: "sun, day",
+          strokeCount: 4,
+          frequencyRank: 1,
+          usefulness: "★★★★★",
+        },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("lists words in expression order with a limit", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertWord(db, {
+        id: "word-dogu",
+        expression: "道具",
+        reading: "どうぐ",
+        primaryMeaning: "tool",
+        usefulness: "★★★★☆",
+        now: "2026-05-05T00:00:00.000Z",
+      });
+      upsertWord(db, {
+        id: "word-kagu",
+        expression: "家具",
+        reading: "かぐ",
+        primaryMeaning: "furniture",
+        usefulness: "★★★☆☆",
+        now: "2026-05-05T00:00:00.000Z",
+      });
+
+      assert.deepEqual(listWords(db, 1), [
+        {
+          id: "word-kagu",
+          expression: "家具",
+          reading: "かぐ",
+          meaning: "furniture",
+          usefulness: "★★★☆☆",
+        },
+      ]);
     } finally {
       db.close();
     }

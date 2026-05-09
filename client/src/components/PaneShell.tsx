@@ -43,7 +43,7 @@ export function PaneShell(props: { state: HomePageData }) {
             Search <span class="kbd">⌘K</span>
           </button>
           <div class="nav-section">Library</div>
-          <button class="nav-item nav-item-dim" type="button">
+          <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("list-words")}>
             Words
           </button>
           <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("list-kanji")}>

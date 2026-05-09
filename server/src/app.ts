@@ -3,6 +3,7 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 
 import { getHomePageData } from "../../shared/home-data.js";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail.js";
+import type { KanjiListResponse, WordListResponse } from "../../shared/library-list.js";
 import type { WordDetailResponse } from "../../shared/word-detail.js";
 import {
   defaultDatabasePath,
@@ -11,6 +12,8 @@ import {
   getMediaAssetById,
   getWordById,
   getWordsForKanji,
+  listKanji,
+  listWords,
   openDatabase,
   type Db,
   type KanjiRow,
@@ -20,6 +23,7 @@ import {
 
 const clientDistDir = join(process.cwd(), "dist", "client");
 const defaultMediaRoot = join(process.cwd(), ".var", "media");
+const libraryListLimit = 50;
 
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
@@ -157,6 +161,18 @@ function toWordDetailResponse(word: WordDetailRow): WordDetailResponse {
   };
 }
 
+function toKanjiListResponse(db: Db): KanjiListResponse {
+  return {
+    items: listKanji(db, libraryListLimit),
+  };
+}
+
+function toWordListResponse(db: Db): WordListResponse {
+  return {
+    items: listWords(db, libraryListLimit),
+  };
+}
+
 function mediaPathInRoot(media: MediaAssetRow, mediaRoot: string) {
   const root = resolve(mediaRoot);
   const filePath = resolve(media.storagePath);
@@ -205,6 +221,54 @@ async function serveKanji(request: Request, literal: string, options: CreateAppO
     return json(toKanjiDetailResponse(handle.db, kanji));
   } catch {
     return json({ error: "Kanji database unavailable" }, { status: 503 });
+  } finally {
+    if (handle.close) {
+      handle.db.close();
+    }
+  }
+}
+
+async function serveKanjiList(request: Request, options: CreateAppOptions) {
+  if (!isAllowed(request, ["GET", "HEAD"])) {
+    return methodNotAllowed(["GET", "HEAD"]);
+  }
+
+  let handle: ReturnType<typeof openRequestDb>;
+
+  try {
+    handle = openRequestDb(options);
+  } catch {
+    return json({ error: "Kanji database unavailable" }, { status: 503 });
+  }
+
+  try {
+    return json(toKanjiListResponse(handle.db));
+  } catch {
+    return json({ error: "Kanji database unavailable" }, { status: 503 });
+  } finally {
+    if (handle.close) {
+      handle.db.close();
+    }
+  }
+}
+
+async function serveWordList(request: Request, options: CreateAppOptions) {
+  if (!isAllowed(request, ["GET", "HEAD"])) {
+    return methodNotAllowed(["GET", "HEAD"]);
+  }
+
+  let handle: ReturnType<typeof openRequestDb>;
+
+  try {
+    handle = openRequestDb(options);
+  } catch {
+    return json({ error: "Word database unavailable" }, { status: 503 });
+  }
+
+  try {
+    return json(toWordListResponse(handle.db));
+  } catch {
+    return json({ error: "Word database unavailable" }, { status: 503 });
   } finally {
     if (handle.close) {
       handle.db.close();
@@ -291,14 +355,22 @@ async function serveMedia(request: Request, id: string, options: CreateAppOption
 export function createApp(options: CreateAppOptions = {}) {
   return async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/kanji") {
+      return serveKanjiList(request, options);
+    }
+
     const kanjiLiteral = routeSegment(url.pathname, "/api/kanji/");
 
     if (kanjiLiteral !== null) {
       return serveKanji(request, kanjiLiteral, options);
     }
 
-    const wordId = routeSegment(url.pathname, "/api/words/");
+    if (url.pathname === "/api/words") {
+      return serveWordList(request, options);
+    }
 
+    const wordId = routeSegment(url.pathname, "/api/words/");
     if (wordId !== null) {
       return serveWord(request, wordId, options);
     }
