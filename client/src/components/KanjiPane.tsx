@@ -41,6 +41,46 @@ export function KanjiPane(props: {
               <div class="kanji-meaning">{model.meaning}</div>
               <div class="srs-btn">+ add to SRS</div>
 
+              <Show when={model.readingGroups.length > 0}>
+                <section class="section">
+                  <h4>Readings</h4>
+                  <div class="reading-group-list">
+                    <For each={model.readingGroups}>
+                      {(group) => (
+                        <div class="reading-group">
+                          <div class="reading-label">{group.label}</div>
+                          <div class="reading-list">
+                            <For each={group.readings}>
+                              {(reading) => (
+                                <div class="reading-row">
+                                  <span class="jp reading-text">
+                                    {reading.reading}
+                                  </span>
+                                  <Show when={reading.meaning}>
+                                    {(meaning) => (
+                                      <span class="reading-meaning">
+                                        {meaning()}
+                                      </span>
+                                    )}
+                                  </Show>
+                                  <Show when={reading.usefulness}>
+                                    {(usefulness) => (
+                                      <span class="word-stars">
+                                        {usefulness()}
+                                      </span>
+                                    )}
+                                  </Show>
+                                </div>
+                              )}
+                            </For>
+                          </div>
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </section>
+              </Show>
+
               <section class="section">
                 <h4>Metadata</h4>
                 <div class="metadata-grid">

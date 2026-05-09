@@ -46,12 +46,13 @@ This creates:
 - `.var/amika.sqlite`
 - `.var/media/kanji-damage/<hash>.png`
 
-The importer currently loads the Kanji Damage note for `具`, its source provenance, minimal kanji metadata, its stroke-order image, and its jukugo words. Word import includes readings, meanings, usefulness stars, word-kanji links, and minimal kanji stubs needed by those links. Future T-1010 tasks will extend the schema and importer for readings, mnemonics, components, and relations.
+The importer currently loads the Kanji Damage note for `具`, its source provenance, minimal kanji metadata, its on/kun readings, its stroke-order image, and its jukugo words. Word import includes readings, meanings, usefulness stars, word-kanji links, and minimal kanji stubs needed by those links. Future T-1010 tasks will extend the schema and importer for mnemonics, components, and relations.
 
 To verify the current imported row:
 
 ```sh
 sqlite3 .var/amika.sqlite "select literal, primary_meaning, stroke_count, frequency_rank, usefulness from kanji where literal = '具';"
+sqlite3 .var/amika.sqlite "select reading_type, reading, meaning, usefulness from kanji_readings where kanji_literal = '具' order by position;"
 sqlite3 .var/amika.sqlite "select expression, reading, primary_meaning, usefulness from words order by rowid;"
 ```
 

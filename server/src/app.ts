@@ -7,6 +7,7 @@ import type { WordDetailResponse } from "../../shared/word-detail.js";
 import {
   defaultDatabasePath,
   getKanjiByLiteral,
+  getKanjiReadings,
   getMediaAssetById,
   getWordById,
   getWordsForKanji,
@@ -129,7 +130,12 @@ function toKanjiDetailResponse(db: Db, kanji: KanjiRow): KanjiDetailResponse {
         }
       : null,
     components: [],
-    readings: [],
+    readings: getKanjiReadings(db, kanji.literal).map((reading) => ({
+      type: reading.type,
+      reading: reading.reading,
+      meaning: reading.meaning,
+      usefulness: reading.usefulness,
+    })),
     mnemonics: [],
     words: getWordsForKanji(db, kanji.literal),
     relations: [],

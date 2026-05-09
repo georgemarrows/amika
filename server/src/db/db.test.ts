@@ -6,10 +6,12 @@ import { describe, test } from "node:test";
 
 import {
   getKanjiByLiteral,
+  getKanjiReadings,
   getWordById,
   getWordsForKanji,
   insertKanjiStubIfMissing,
   openDatabase,
+  replaceKanjiReadings,
   replaceWordKanji,
   runMigrations,
   upsertKanji,
@@ -31,7 +33,7 @@ describe("database migrations", () => {
         .prepare("select name from sqlite_master where type = 'table' and name = 'kanji'")
         .get();
 
-      assert.deepEqual(first.applied, ["001_initial_kanji.sql", "002_words.sql"]);
+      assert.deepEqual(first.applied, ["001_initial_kanji.sql", "002_words.sql", "003_kanji_readings.sql"]);
       assert.deepEqual(second.applied, []);
       assert.ok(table);
     } finally {
@@ -197,11 +199,91 @@ describe("kanji repository", () => {
       runMigrations(db);
       assert.deepEqual(
         db.prepare("select count(*) as count from schema_migrations").get() as { count: number },
-        { count: 2 },
+        { count: 3 },
       );
     } finally {
       db.close();
       rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("replaces and reads kanji readings for a source record", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertSourceDeck(db, {
+        id: "deck",
+        name: "Deck",
+        format: "apkg",
+        fileName: "deck.apkg",
+        fileHash: "hash",
+        importedAt: "2026-05-05T00:00:00.000Z",
+      });
+      upsertSourceRecord(db, {
+        id: "record",
+        sourceDeckId: "deck",
+        externalId: "1439130130915",
+        recordType: "kanji_damage_note",
+        rawJson: "{}",
+      });
+      upsertKanji(db, {
+        literal: "日",
+        primaryMeaning: "sun, day",
+        strokeCount: 4,
+        strokeOrderMediaId: null,
+        frequencyRank: 1,
+        usefulness: "★★★★★",
+        sourceRecordId: "record",
+        now: "2026-05-05T00:00:00.000Z",
+      });
+
+      replaceKanjiReadings(db, "日", "record", [
+        {
+          id: "reading-nichi",
+          kanjiLiteral: "日",
+          readingType: "on",
+          reading: "NICHI",
+          meaning: null,
+          usefulness: null,
+          position: 0,
+          sourceRecordId: "record",
+        },
+        {
+          id: "reading-hi",
+          kanjiLiteral: "日",
+          readingType: "kun",
+          reading: "ひ",
+          meaning: "a day",
+          usefulness: "★★★★★",
+          position: 1,
+          sourceRecordId: "record",
+        },
+      ]);
+      replaceKanjiReadings(db, "日", "record", [
+        {
+          id: "reading-jitsu",
+          kanjiLiteral: "日",
+          readingType: "on",
+          reading: "JITSU",
+          meaning: null,
+          usefulness: null,
+          position: 0,
+          sourceRecordId: "record",
+        },
+      ]);
+
+      assert.deepEqual(getKanjiReadings(db, "日"), [
+        {
+          type: "on",
+          reading: "JITSU",
+          meaning: null,
+          usefulness: null,
+          position: 0,
+        },
+      ]);
+    } finally {
+      db.close();
     }
   });
 });

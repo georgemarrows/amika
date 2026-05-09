@@ -10,6 +10,7 @@ import {
   getWordById,
   insertKanjiStubIfMissing,
   openDatabase,
+  replaceKanjiReadings,
   replaceWordKanji,
   runMigrations,
   upsertKanji,
@@ -59,6 +60,18 @@ function seedKanjiDetail(db: Db, mediaRoot: string) {
     sourceRecordId: "record",
     now: "2026-05-05T00:00:00.000Z",
   });
+  replaceKanjiReadings(db, "具", "record", [
+    {
+      id: "reading-gu",
+      kanjiLiteral: "具",
+      readingType: "on",
+      reading: "GU",
+      meaning: null,
+      usefulness: null,
+      position: 0,
+      sourceRecordId: "record",
+    },
+  ]);
 }
 
 function seedWordDetail(db: Db) {
@@ -131,7 +144,14 @@ describe("server app", () => {
           contentType: "image/png",
         },
         components: [],
-        readings: [],
+        readings: [
+          {
+            type: "on",
+            reading: "GU",
+            meaning: null,
+            usefulness: null,
+          },
+        ],
         mnemonics: [],
         words: [
           {

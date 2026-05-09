@@ -13,6 +13,7 @@ import {
   getKanjiByLiteral,
   insertKanjiStubIfMissing,
   openDatabase,
+  replaceKanjiReadings,
   replaceWordKanji,
   runMigrations,
   upsertKanji,
@@ -23,6 +24,7 @@ import {
   upsertWordMeaning,
 } from "../server/src/db/index.js";
 import type { Db } from "../server/src/db/index.js";
+import type { KanjiReading } from "../shared/kanji-reading.js";
 
 const fieldSeparator = "\x1f";
 
@@ -78,6 +80,8 @@ export type ParsedKanjiDamageWord = {
   }>;
 };
 
+export type ParsedKanjiDamageReading = KanjiReading;
+
 type MediaImportResult = {
   mediaAssetId: string;
   copied: boolean;
@@ -131,6 +135,12 @@ export function buildWordId(expression: string, reading: string | null) {
 
 function buildWordMeaningId(wordId: string, meaning: string) {
   return `${wordId}-meaning-${sha256Text(meaning).slice(0, 16)}`;
+}
+
+function buildKanjiReadingId(sourceRecordId: string, reading: ParsedKanjiDamageReading, position: number) {
+  return `${sourceRecordId}-reading-${sha256Text(
+    `${reading.type}${fieldSeparator}${reading.reading}${fieldSeparator}${reading.meaning ?? ""}${fieldSeparator}${position}`,
+  ).slice(0, 16)}`;
 }
 
 function getContentType(fileName: string): string | null {
@@ -196,6 +206,112 @@ function uniq(values: string[]) {
   }
 
   return unique;
+}
+
+function splitReadingList(value: string) {
+  return stripHtml(value)
+    .split(/[,\u3001]/)
+    .map((reading) => reading.trim())
+    .filter(Boolean);
+}
+
+function parseTableRows(html: string) {
+  return [...html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map((match) => match[1]);
+}
+
+function parseFirstCellText(rowHtml: string) {
+  return stripHtml(rowHtml.match(/<td\b[^>]*>([\s\S]*?)<\/td>/i)?.[1] ?? "");
+}
+
+function parseSecondCellHtml(rowHtml: string) {
+  const cells = [...rowHtml.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)];
+
+  return cells[1]?.[1] ?? "";
+}
+
+function parseUsefulnessStars(html: string) {
+  return stripHtml(
+    html.match(/<span\b[^>]*class=["'][^"']*\busefulness-stars\b[^"']*["'][^>]*>([^<]*)<\/span>/i)?.[1] ?? "",
+  ) || null;
+}
+
+function parseKunMeaning(cellHtml: string) {
+  const beforeStars = cellHtml.split(/<span\b[^>]*class=["'][^"']*\busefulness-stars\b/i)[0] ?? cellHtml;
+
+  return stripHtml(beforeStars) || null;
+}
+
+function dedupeReadings(readings: ParsedKanjiDamageReading[]) {
+  const seen = new Set<string>();
+  const unique: ParsedKanjiDamageReading[] = [];
+
+  for (const reading of readings) {
+    const key = `${reading.type}${fieldSeparator}${reading.reading}${fieldSeparator}${reading.meaning ?? ""}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(reading);
+    }
+  }
+
+  return unique;
+}
+
+function parseOnReadings(fields: KanjiDamageFields): ParsedKanjiDamageReading[] {
+  const fullRows = parseTableRows(fields["Full onyomi"] ?? "");
+  const readings = fullRows.flatMap((row) => splitReadingList(parseFirstCellText(row)));
+  const fallbackReadings = readings.length > 0 ? readings : splitReadingList(fields.Onyomi ?? "");
+
+  return fallbackReadings.map((reading) => ({
+    type: "on",
+    reading,
+    meaning: null,
+    usefulness: null,
+  }));
+}
+
+function parseKunReadings(fields: KanjiDamageFields): ParsedKanjiDamageReading[] {
+  const fullRows = parseTableRows(fields["Full kunyomi"] ?? "");
+  const fullReadings: ParsedKanjiDamageReading[] = [];
+
+  for (const row of fullRows) {
+    const reading = parseFirstCellText(row);
+    const meaningHtml = parseSecondCellHtml(row);
+
+    if (!reading) {
+      continue;
+    }
+
+    fullReadings.push({
+      type: "kun",
+      reading,
+      meaning: parseKunMeaning(meaningHtml),
+      usefulness: parseUsefulnessStars(meaningHtml),
+    });
+  }
+
+  if (fullReadings.length > 0) {
+    return fullReadings;
+  }
+
+  const firstKunyomi = stripHtml(fields["First kunyomi"] ?? "");
+
+  if (!firstKunyomi) {
+    return [];
+  }
+
+  return [
+    {
+      type: "kun",
+      reading: firstKunyomi,
+      meaning: stripHtml(fields["First kunyomi meaning"] ?? "") || null,
+      usefulness: stripHtml(fields["First kunyomi usefulness"] ?? "") || null,
+    },
+  ];
+}
+
+export function parseKanjiDamageReadings(fields: KanjiDamageFields): ParsedKanjiDamageReading[] {
+  return dedupeReadings([...parseOnReadings(fields), ...parseKunReadings(fields)]);
 }
 
 function parseWordComponents(rowHtml: string) {
@@ -470,6 +586,29 @@ function importWordRecord(params: {
   );
 }
 
+function importReadingRecords(params: {
+  appDb: Db;
+  kanjiLiteral: string;
+  readings: ParsedKanjiDamageReading[];
+  sourceRecordId: string;
+}) {
+  replaceKanjiReadings(
+    params.appDb,
+    params.kanjiLiteral,
+    params.sourceRecordId,
+    params.readings.map((reading, index) => ({
+      id: buildKanjiReadingId(params.sourceRecordId, reading, index),
+      kanjiLiteral: params.kanjiLiteral,
+      readingType: reading.type,
+      reading: reading.reading,
+      meaning: reading.meaning,
+      usefulness: reading.usefulness,
+      position: index,
+      sourceRecordId: params.sourceRecordId,
+    })),
+  );
+}
+
 export async function importKanjiDamage(
   options: ImportKanjiDamageOptions,
 ): Promise<ImportKanjiDamageSummary> {
@@ -516,6 +655,7 @@ export async function importKanjiDamage(
     }
 
     const parsedWords = parseKanjiDamageWords(note.fields);
+    const parsedReadings = parseKanjiDamageReadings(note.fields);
     const importOne = appDb.transaction(() => {
       importKanjiRecord({
         appDb,
@@ -526,6 +666,13 @@ export async function importKanjiDamage(
       });
 
       const sourceRecordId = `${deckId}-note-${note.noteId}`;
+      importReadingRecords({
+        appDb,
+        kanjiLiteral: note.fields.Kanji,
+        readings: parsedReadings,
+        sourceRecordId,
+      });
+
       for (const word of parsedWords) {
         importWordRecord({
           appDb,

@@ -383,6 +383,50 @@ code,
   font-size: 12px;
 }
 
+.reading-group-list {
+  display: grid;
+  gap: var(--gap-md);
+}
+
+.reading-group {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: var(--gap-md);
+  align-items: start;
+}
+
+.reading-label {
+  color: var(--color-dim);
+  font-size: 12px;
+}
+
+.reading-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-sm);
+}
+
+.reading-row {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: baseline;
+  gap: var(--gap-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--gap-xs) var(--gap-md);
+  background: var(--color-bg-card);
+}
+
+.reading-text {
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.reading-meaning {
+  color: var(--color-dim);
+  font-size: 12px;
+}
+
 .metadata-grid {
   display: grid;
   gap: var(--gap-xs);

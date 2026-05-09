@@ -3,11 +3,13 @@ export type { Db, OpenDatabaseOptions } from "./connection.js";
 export { defaultMigrationsDir, runMigrations } from "./migrations.js";
 export type { MigrationResult } from "./migrations.js";
 export {
+  getKanjiReadings,
   getMediaAssetById,
   getKanjiByLiteral,
   getWordById,
   getWordsForKanji,
   insertKanjiStubIfMissing,
+  replaceKanjiReadings,
   upsertKanji,
   upsertMediaAsset,
   upsertSourceDeck,
@@ -17,6 +19,8 @@ export {
   replaceWordKanji,
 } from "./repositories.js";
 export type {
+  KanjiReadingInput,
+  KanjiReadingRow,
   KanjiStubInput,
   KanjiInput,
   KanjiRow,

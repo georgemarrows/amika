@@ -1,3 +1,4 @@
+import type { KanjiReading, KanjiReadingType } from "../../../shared/kanji-reading.js";
 import type { Db } from "./connection.js";
 
 export type SourceDeckInput = {
@@ -67,6 +68,17 @@ export type WordKanjiInput = {
   position: number;
 };
 
+export type KanjiReadingInput = {
+  id: string;
+  kanjiLiteral: string;
+  readingType: KanjiReadingType;
+  reading: string;
+  meaning: string | null;
+  usefulness: string | null;
+  position: number;
+  sourceRecordId: string | null;
+};
+
 export type MediaAssetRow = {
   id: string;
   sourceDeckId: string;
@@ -107,6 +119,10 @@ export type WordMeaningRow = {
 export type WordKanjiRow = {
   literal: string;
   meaning: string | null;
+  position: number;
+};
+
+export type KanjiReadingRow = KanjiReading & {
   position: number;
 };
 
@@ -313,6 +329,50 @@ export function replaceWordKanji(db: Db, wordId: string, links: WordKanjiInput[]
   }
 }
 
+export function replaceKanjiReadings(
+  db: Db,
+  kanjiLiteral: string,
+  sourceRecordId: string | null,
+  readings: KanjiReadingInput[],
+) {
+  const deleteExisting = db.prepare(`
+    delete from kanji_readings
+    where kanji_literal = ?
+      and (
+        source_record_id = ?
+        or (? is null and source_record_id is null)
+      )
+  `);
+  const insertReading = db.prepare(`
+    insert into kanji_readings (
+      id,
+      kanji_literal,
+      reading_type,
+      reading,
+      meaning,
+      usefulness,
+      position,
+      source_record_id
+    )
+    values (
+      @id,
+      @kanjiLiteral,
+      @readingType,
+      @reading,
+      @meaning,
+      @usefulness,
+      @position,
+      @sourceRecordId
+    )
+  `);
+
+  deleteExisting.run(kanjiLiteral, sourceRecordId, sourceRecordId);
+
+  for (const reading of readings) {
+    insertReading.run(reading);
+  }
+}
+
 export function getKanjiByLiteral(db: Db, literal: string): KanjiRow | null {
   const row = db
     .prepare(
@@ -367,6 +427,48 @@ export function getKanjiByLiteral(db: Db, literal: string): KanjiRow | null {
         }
       : null,
   };
+}
+
+export function getKanjiReadings(db: Db, literal: string): KanjiReadingRow[] {
+  return db
+    .prepare(
+      `
+      select
+        reading_type,
+        reading,
+        meaning,
+        usefulness,
+        position
+      from kanji_readings
+      where kanji_literal = ?
+      order by
+        case reading_type
+          when 'on' then 0
+          when 'kun' then 1
+          else 2
+        end,
+        position,
+        reading
+      `,
+    )
+    .all(literal)
+    .map((row) => {
+      const reading = row as {
+        reading_type: KanjiReadingType;
+        reading: string;
+        meaning: string | null;
+        usefulness: string | null;
+        position: number;
+      };
+
+      return {
+        type: reading.reading_type,
+        reading: reading.reading,
+        meaning: reading.meaning,
+        usefulness: reading.usefulness,
+        position: reading.position,
+      };
+    });
 }
 
 export function getWordsForKanji(db: Db, literal: string): WordSummaryRow[] {

@@ -4,12 +4,13 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { getKanjiByLiteral, getWordById, getWordsForKanji, openDatabase } from "../server/src/db/index.js";
+import { getKanjiByLiteral, getKanjiReadings, getWordById, getWordsForKanji, openDatabase } from "../server/src/db/index.js";
 import {
   extractFirstImageSrc,
   findKanjiNote,
   importKanjiDamage,
   mapAnkiFields,
+  parseKanjiDamageReadings,
   parseKanjiDamageWords,
   parseStrokeCount,
 } from "./import-kanji-damage.js";
@@ -85,6 +86,132 @@ describe("Kanji Damage parser", () => {
       { literal: "具", meaning: "tool" },
     ]);
   });
+
+  test("parses minimal on-only kanji readings", () => {
+    const readings = parseKanjiDamageReadings({
+      Onyomi: "GU",
+      "Full onyomi": `
+        <table class="definition"><tbody><tr>
+          <td><span class="onyomi">GU</span></td>
+          <td></td>
+        </tr></tbody></table>
+      `,
+      "Full kunyomi": "",
+    });
+
+    assert.deepEqual(readings, [
+      {
+        type: "on",
+        reading: "GU",
+        meaning: null,
+        usefulness: null,
+      },
+    ]);
+  });
+
+  test("parses multi-on readings from Kanji Damage fields", () => {
+    const readings = parseKanjiDamageReadings({
+      Onyomi: "ICHI, ITSU",
+      "Full onyomi": `
+        <table class="definition"><tbody><tr>
+          <td><span class="onyomi">ICHI, ITSU</span></td>
+          <td><p>mnemonic text is not imported for T-30000a</p></td>
+        </tr></tbody></table>
+      `,
+      "First kunyomi": '<span class="kanji_character">ひと*つ</span>',
+      "First kunyomi meaning": "one thing",
+      "First kunyomi usefulness": "★★★★☆",
+      "Full kunyomi": `
+        <table class="definition"><tbody><tr>
+          <td><span class="kanji_character">ひと*つ</span></td>
+          <td>one thing<br/><span class="usefulness-stars">★★★★☆</span></td>
+        </tr></tbody></table>
+      `,
+    });
+
+    assert.deepEqual(readings, [
+      { type: "on", reading: "ICHI", meaning: null, usefulness: null },
+      { type: "on", reading: "ITSU", meaning: null, usefulness: null },
+      { type: "kun", reading: "ひと*つ", meaning: "one thing", usefulness: "★★★★☆" },
+    ]);
+  });
+
+  test("parses rich full kunyomi rows", () => {
+    const readings = parseKanjiDamageReadings({
+      Onyomi: "KOU",
+      "Full onyomi": `
+        <table class="definition"><tbody><tr>
+          <td><span class="onyomi">KOU</span></td>
+          <td></td>
+        </tr></tbody></table>
+      `,
+      "Full kunyomi": `
+        <table class="definition"><tbody>
+          <tr>
+            <td><span class="kanji_character">( が ) す*き</span></td>
+            <td>to like<br/><span class="usefulness-stars">★★★★★</span></td>
+          </tr>
+          <tr>
+            <td><span class="kanji_character">この＊む</span></td>
+            <td>To have a preference for.<br/><span class="usefulness-stars">★★☆☆☆</span></td>
+          </tr>
+          <tr>
+            <td><span class="kanji_character">この＊み</span></td>
+            <td>The noun form of 好む.<br/><span class="usefulness-stars">★☆☆☆☆</span></td>
+          </tr>
+        </tbody></table>
+      `,
+    });
+
+    assert.deepEqual(readings, [
+      { type: "on", reading: "KOU", meaning: null, usefulness: null },
+      { type: "kun", reading: "( が ) す*き", meaning: "to like", usefulness: "★★★★★" },
+      { type: "kun", reading: "この＊む", meaning: "To have a preference for.", usefulness: "★★☆☆☆" },
+      { type: "kun", reading: "この＊み", meaning: "The noun form of 好む.", usefulness: "★☆☆☆☆" },
+    ]);
+  });
+
+  test("parses 日 as multi-on plus single-kun metadata", () => {
+    const readings = parseKanjiDamageReadings({
+      Onyomi: "NICHI, JITSU",
+      "Full onyomi": `
+        <table class="definition"><tbody><tr>
+          <td><span class="onyomi">NICHI, JITSU</span></td>
+          <td><p>mnemonic text is not imported.</p></td>
+        </tr></tbody></table>
+      `,
+      "First kunyomi": '<span class="kanji_character">ひ</span>',
+      "First kunyomi meaning": "a day",
+      "First kunyomi usefulness": "★★★★★",
+      "Full kunyomi": `
+        <table class="definition"><tbody><tr>
+          <td><span class="kanji_character">ひ</span></td>
+          <td>a day<br/><span class="usefulness-stars">★★★★★</span></td>
+        </tr></tbody></table>
+      `,
+    });
+
+    assert.deepEqual(readings, [
+      { type: "on", reading: "NICHI", meaning: null, usefulness: null },
+      { type: "on", reading: "JITSU", meaning: null, usefulness: null },
+      { type: "kun", reading: "ひ", meaning: "a day", usefulness: "★★★★★" },
+    ]);
+  });
+
+  test("falls back to simple reading fields when full tables are absent", () => {
+    const readings = parseKanjiDamageReadings({
+      Onyomi: "KOU, KU",
+      "First kunyomi": '<span class="kanji_character">くち</span>',
+      "First kunyomi meaning": "mouth",
+      "First kunyomi usefulness": "★★★★★",
+    });
+
+    assert.deepEqual(readings, [
+      { type: "on", reading: "KOU", meaning: null, usefulness: null },
+      { type: "on", reading: "KU", meaning: null, usefulness: null },
+      { type: "kun", reading: "くち", meaning: "mouth", usefulness: "★★★★★" },
+    ]);
+  });
 });
 
 describe("Kanji Damage importer", () => {
@@ -120,6 +247,7 @@ describe("Kanji Damage importer", () => {
       try {
         const kanji = getKanjiByLiteral(db, "具");
         const words = getWordsForKanji(db, "具");
+        const readings = getKanjiReadings(db, "具");
         const dogu = words.find((word) => word.expression === "道具");
         const kanjiCount = db.prepare("select count(*) as count from kanji").get() as { count: number };
         const mediaCount = db.prepare("select count(*) as count from media_assets").get() as {
@@ -128,6 +256,7 @@ describe("Kanji Damage importer", () => {
         const wordCount = db.prepare("select count(*) as count from words").get() as { count: number };
         const wordMeaningCount = db.prepare("select count(*) as count from word_meanings").get() as { count: number };
         const wordKanjiCount = db.prepare("select count(*) as count from word_kanji").get() as { count: number };
+        const readingCount = db.prepare("select count(*) as count from kanji_readings").get() as { count: number };
 
         assert.deepEqual(first.importedLiterals, ["具"]);
         assert.deepEqual(first.importedWords, ["道具", "家具", "具体的", "具合"]);
@@ -143,6 +272,10 @@ describe("Kanji Damage importer", () => {
         assert.equal(wordCount.count, 4);
         assert.equal(wordMeaningCount.count, 6);
         assert.equal(wordKanjiCount.count, 9);
+        assert.equal(readingCount.count, 1);
+        assert.deepEqual(readings, [
+          { type: "on", reading: "GU", meaning: null, usefulness: null, position: 0 },
+        ]);
         assert.deepEqual(
           words.map((word) => word.expression),
           ["道具", "家具", "具体的", "具合"],

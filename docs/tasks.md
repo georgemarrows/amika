@@ -9,7 +9,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [ ] T-20000 Clean up Phase 1 task list
 
 ## Next up
-- [ ] T-30000a load a single kanji with all readings.
+- [x] T-30000a load a single kanji with all readings.
 - [ ] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
 - [ ] T-30100 Search
 - [ ] T-30200 Simple SRS implementation

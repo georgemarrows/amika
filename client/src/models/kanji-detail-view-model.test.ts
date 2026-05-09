@@ -16,7 +16,14 @@ describe("createKanjiDetailViewModel", () => {
         contentType: "image/png",
       },
       components: [],
-      readings: [],
+      readings: [
+        {
+          type: "on",
+          reading: "GU",
+          meaning: null,
+          usefulness: null,
+        },
+      ],
       mnemonics: [],
       words: [],
       relations: [],
@@ -28,6 +35,19 @@ describe("createKanjiDetailViewModel", () => {
       { label: "Strokes", value: "8" },
       { label: "Usefulness", value: "★★★★☆" },
       { label: "Frequency", value: "#683" },
+    ]);
+    expect(model.readingGroups).toEqual([
+      {
+        label: "On",
+        readings: [
+          {
+            type: "on",
+            reading: "GU",
+            meaning: null,
+            usefulness: null,
+          },
+        ],
+      },
     ]);
     expect(model.strokeOrderImage?.url).toBe("/api/media/media");
   });
@@ -66,6 +86,42 @@ describe("createKanjiDetailViewModel", () => {
     ]);
   });
 
+  test("groups readings by type for rendering", () => {
+    const model = createKanjiDetailViewModel({
+      literal: "日",
+      meaning: "sun, day",
+      strokeCount: 4,
+      usefulness: "★★★★★",
+      frequencyRank: 1,
+      strokeOrderImage: null,
+      components: [],
+      readings: [
+        { type: "on", reading: "NICHI", meaning: null, usefulness: null },
+        { type: "on", reading: "JITSU", meaning: null, usefulness: null },
+        { type: "kun", reading: "ひ", meaning: "a day", usefulness: "★★★★★" },
+      ],
+      mnemonics: [],
+      words: [],
+      relations: [],
+    });
+
+    expect(model.readingGroups).toEqual([
+      {
+        label: "On",
+        readings: [
+          { type: "on", reading: "NICHI", meaning: null, usefulness: null },
+          { type: "on", reading: "JITSU", meaning: null, usefulness: null },
+        ],
+      },
+      {
+        label: "Kun",
+        readings: [
+          { type: "kun", reading: "ひ", meaning: "a day", usefulness: "★★★★★" },
+        ],
+      },
+    ]);
+  });
+
   test("uses clear placeholders for missing optional data", () => {
     const model = createKanjiDetailViewModel({
       literal: "美",
@@ -87,5 +143,6 @@ describe("createKanjiDetailViewModel", () => {
       { label: "Frequency", value: "Unknown" },
     ]);
     expect(model.strokeOrderImage).toBeNull();
+    expect(model.readingGroups).toEqual([]);
   });
 });

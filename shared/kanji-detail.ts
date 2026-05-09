@@ -1,3 +1,5 @@
+import type { KanjiReading } from "./kanji-reading.js";
+
 export type MediaAsset = {
   id: string;
   url: string;
@@ -20,7 +22,7 @@ export type KanjiDetailResponse = {
   usefulness: string | null;
   strokeOrderImage: MediaAsset | null;
   components: [];
-  readings: [];
+  readings: KanjiReading[];
   mnemonics: [];
   words: KanjiWordSummary[];
   relations: [];
