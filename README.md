@@ -12,6 +12,7 @@ Minimal `T-1000` scaffold:
 - `bun run dev`
 - `bun run db:migrate`
 - `bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg`
+- `bun run repair:kanji-damage-import -- --dry-run`
 - `bun run build`
 - `bun run test`
 - `bun run test:soak`
@@ -42,10 +43,13 @@ To rebuild the current dictionary state from a fresh checkout:
    bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg
    ```
 
+   If `.var/amika.sqlite` already exists, the importer first creates a verified SQLite backup under `.var/backups/` and prints the backup path in its summary. If the backup cannot be created or fails `pragma integrity_check`, the import aborts before writing to the database.
+
 This creates:
 
 - `.var/amika.sqlite`
 - `.var/media/kanji-damage/<hash>.png`
+- `.var/backups/amika-<timestamp>.sqlite` before imports into an existing local database
 
 The importer loads real single-character Han kanji notes from Kanji Damage, their source provenance, minimal kanji metadata, on/kun readings, stroke-order images, and jukugo words. Word import includes readings, meanings, usefulness stars, word-kanji links, and minimal kanji stubs needed by those links. Kanji Damage primitive notes such as image radicals, letter placeholders, and kana-like component entries are intentionally skipped until component import work lands. Future T-1010 tasks will extend the schema and importer for mnemonics, components, and relations.
 
@@ -80,6 +84,24 @@ sqlite3 .var/amika.sqlite "select 'kanji', count(*) from kanji union all select 
 ```
 
 `bun run test` runs the fast test suite. `bun run test:soak` runs optional full-deck import checks against the local APKG and is intentionally kept out of the default loop.
+
+## Repair Imported Kanji Damage Data
+
+Importer bug fixes that add or replace rows can usually be applied by rerunning the importer. Data deletion is handled separately so cleanup is explicit and backed up.
+
+Preview imported junk word rows without changing the database:
+
+```sh
+bun run repair:kanji-damage-import -- --dry-run
+```
+
+Apply the cleanup:
+
+```sh
+bun run repair:kanji-damage-import -- --apply
+```
+
+The repair command only targets importer-shaped word IDs whose expressions are Kanji Damage templates or examples with ASCII letters or digits, such as `1969年`, `XXX専`, and `xxx人`. On `--apply`, it creates and verifies a SQLite backup before deleting matching rows plus their word meanings and kanji links.
 
 The DB/import scripts and local HTTP server run through Node because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.
 

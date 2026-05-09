@@ -346,6 +346,9 @@ describe("Kanji Damage importer", () => {
         assert.equal(first.skippedNoteCount, 0);
         assert.deepEqual(first.notesWithoutReadings, []);
         assert.deepEqual(first.notesWithoutWords, []);
+        assert.equal(first.backupPath, null);
+        assert.ok(second.backupPath);
+        assert.equal(existsSync(second.backupPath), true);
         assert.equal(first.mediaCopied, 1);
         assert.equal(second.mediaReused, 1);
         assert.equal(kanji?.primaryMeaning, "tool");

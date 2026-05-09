@@ -14,7 +14,54 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [ ] T-30100 Search
 - [ ] T-30200 Simple SRS implementation
 - [ ] T-30300 Import Anki status?
-
+- [ ] T-30400 Add example sentences. Following deleted non-words could go in examples
+```json
+     {
+        "expression": "1969年",
+        "reading": "1969ねん",
+        "meaning": "Oh, No! Please God help meeeeee. . . .:("
+      },
+      {
+        "expression": "2時半",
+        "reading": "にじはん",
+        "meaning": "2:30"
+      },
+      {
+        "expression": "XXX専",
+        "reading": "XXXせん",
+        "meaning": "specialist in xxx"
+      },
+      {
+        "expression": "XXX症",
+        "reading": "XXXしょう",
+        "meaning": "XXX - disease"
+      },
+      {
+        "expression": "xxx人",
+        "reading": "じん",
+        "meaning": "person from xxx"
+      },
+      {
+        "expression": "昨 XXX",
+        "reading": "saku - XXX",
+        "meaning": "last - xxx"
+      },
+      {
+        "expression": "第7章",
+        "reading": "だいななしょう",
+        "meaning": "chapter 7"
+      },
+      {
+        "expression": "８時頃",
+        "reading": "はちじごろ",
+        "meaning": "around 8-ish"
+      },
+      {
+        "expression": "９条",
+        "reading": "きゅうじょう",
+        "meaning": "article 9"
+      }
+```
 
 # Future epics (unprioritized)
 

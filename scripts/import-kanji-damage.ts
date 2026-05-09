@@ -25,6 +25,7 @@ import {
 } from "../server/src/db/index.js";
 import type { Db } from "../server/src/db/index.js";
 import type { KanjiReading } from "../shared/kanji-reading.js";
+import { backupSqliteDatabase } from "./sqlite-backup.js";
 
 const fieldSeparator = "\x1f";
 
@@ -55,12 +56,14 @@ export type ImportKanjiDamageOptions = {
   dbPath?: string;
   mediaRoot?: string;
   now?: string;
+  backupDir?: string;
 };
 
 export type ImportKanjiDamageSummary = {
   deckId: string;
   deckHash: string;
   dbPath: string;
+  backupPath: string | null;
   importedLiterals: string[];
   importedWords: string[];
   importedKanjiCount: number;
@@ -663,6 +666,11 @@ export async function importKanjiDamage(
   const deckHash = sha256(extracted.apkgBytes);
   const deckId = buildDeckId(deckHash);
   const ankiDb = new DatabaseConstructor(extracted.collectionPath, { readonly: true });
+  const backupPath = await backupSqliteDatabase({
+    dbPath,
+    now,
+    backupDir: options.backupDir,
+  });
   const appDb = openDatabase({ path: dbPath });
 
   try {
@@ -769,6 +777,7 @@ export async function importKanjiDamage(
       deckId,
       deckHash,
       dbPath,
+      backupPath,
       importedLiterals,
       importedWords,
       importedKanjiCount: importedLiterals.length,
@@ -836,6 +845,7 @@ function toCliSummary(summary: ImportKanjiDamageSummary) {
     deckId: summary.deckId,
     deckHash: summary.deckHash,
     dbPath: summary.dbPath,
+    backupPath: summary.backupPath,
     importedKanjiCount: summary.importedKanjiCount,
     importedWordCount: summary.importedWordCount,
     importedReadingCount: summary.importedReadingCount,

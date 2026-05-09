@@ -8,6 +8,7 @@
     "dev:server": "node --import tsx --watch server/src/index.ts",
     "db:migrate": "node --import tsx scripts/db-migrate.ts",
     "import:kanji-damage": "node --import tsx scripts/import-kanji-damage.ts",
+    "repair:kanji-damage-import": "node --import tsx scripts/repair-kanji-damage-import.ts",
     "build": "bun run build:client && bun run build:server",
     "build:client": "vite build --config vite.config.ts",
     "build:server": "rm -rf dist/server && tsc -p server/tsconfig.json",
