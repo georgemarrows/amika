@@ -354,6 +354,18 @@ function extractKanjiComponentsFromExpression(expression: string) {
   }));
 }
 
+function mergeWordComponents(expression: string, parsedComponents: ParsedKanjiDamageWord["kanji"]) {
+  const parsedByLiteral = new Map(parsedComponents.map((component) => [component.literal, component]));
+
+  return extractKanjiComponentsFromExpression(expression).map(
+    (component) => parsedByLiteral.get(component.literal) ?? component,
+  );
+}
+
+export function isImportableWordExpression(expression: string) {
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(expression) && !/[A-Za-z0-9０-９]/.test(expression);
+}
+
 function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
   const expressionMatch = rowHtml.match(/<ruby>\s*([^<]+?)\s*<rp>\(<\/rp>\s*<rt>([^<]+)<\/rt>/i);
 
@@ -381,6 +393,10 @@ function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
     return null;
   }
 
+  if (!isImportableWordExpression(expression)) {
+    return null;
+  }
+
   const components = parseWordComponents(rowHtml);
 
   return {
@@ -390,7 +406,7 @@ function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
     primaryMeaning,
     usefulness,
     meanings,
-    kanji: components.length > 0 ? components : extractKanjiComponentsFromExpression(expression),
+    kanji: mergeWordComponents(expression, components),
   };
 }
 
@@ -406,6 +422,10 @@ function parseFirstJukugo(fields: KanjiDamageFields): ParsedKanjiDamageWord[] {
   const reading = stripHtml(match[2]) || null;
   const primaryMeaning = stripHtml(fields["First jukugo meaning"] ?? "") || null;
   const usefulness = stripHtml(fields["First jukugo usefulness"] ?? "") || null;
+
+  if (!isImportableWordExpression(expression)) {
+    return [];
+  }
 
   return [
     {

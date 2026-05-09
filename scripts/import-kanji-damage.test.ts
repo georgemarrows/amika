@@ -10,6 +10,7 @@ import {
   findKanjiNote,
   importKanjiDamage,
   isImportableKanjiLiteral,
+  isImportableWordExpression,
   mapAnkiFields,
   parseKanjiDamageReadings,
   parseKanjiDamageWords,
@@ -104,6 +105,59 @@ describe("Kanji Damage parser", () => {
     assert.equal(words.length, 1);
     assert.equal(words[0].expression, "朝ごはん");
     assert.deepEqual(words[0].kanji, [{ literal: "朝", meaning: null }]);
+  });
+
+  test("fills missing word kanji links when only some anchors are component anchors", () => {
+    const words = parseKanjiDamageWords({
+      "Full jukugo": `
+        <table><tbody><tr>
+          <td><ruby><span class="kanji_character"><ruby>建築家<rp>(</rp><rt>けんちくか</rt><rp>)</rp></ruby></span></ruby></td>
+          <td><p>
+            architect
+            <span class="usefulness-stars" title="3 out of 5 stars">★★★☆☆</span>
+            <br/>
+            <a href="http://www.kanjidamage.com/kanji/1154-build-%E5%BB%BA">建</a><a href="http://www.kanjidamage.com/kanji/1290-architect-%E7%AF%89">築</a> (architecture)
+            + <a class="component" href="http://www.kanjidamage.com/kanji/1223-home-%E5%AE%B6">家</a> (home)
+            = 建築家 (architect)
+          </p></td>
+        </tr></tbody></table>
+      `,
+    });
+
+    assert.equal(words.length, 1);
+    assert.deepEqual(words[0].kanji, [
+      { literal: "建", meaning: null },
+      { literal: "築", meaning: null },
+      { literal: "家", meaning: "home" },
+    ]);
+  });
+
+  test("skips alphanumeric template and example expressions", () => {
+    const words = parseKanjiDamageWords({
+      "Full jukugo": `
+        <table><tbody>
+          <tr>
+            <td><ruby><span class="kanji_character"><ruby>1969年<rp>(</rp><rt>1969ねん</rt><rp>)</rp></ruby></span></ruby></td>
+            <td><p>Oh, No! Please God help meeeeee. . . .:(</p></td>
+          </tr>
+          <tr>
+            <td><ruby><span class="kanji_character"><ruby>XXX専<rp>(</rp><rt>XXXせん</rt><rp>)</rp></ruby></span></ruby></td>
+            <td><p>specialist in xxx</p></td>
+          </tr>
+          <tr>
+            <td><ruby><span class="kanji_character"><ruby>いい加減<rp>(</rp><rt>いいかげん</rt><rp>)</rp></ruby></span></ruby></td>
+            <td><p>unfounded, pointless</p></td>
+          </tr>
+        </tbody></table>
+      `,
+    });
+
+    assert.deepEqual(
+      words.map((word) => word.expression),
+      ["いい加減"],
+    );
+    assert.equal(isImportableWordExpression("2時半"), false);
+    assert.equal(isImportableWordExpression("xxx人"), false);
   });
 
   test("recognizes importable kanji literals and skips primitive placeholders", () => {
