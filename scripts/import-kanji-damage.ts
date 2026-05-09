@@ -63,6 +63,12 @@ export type ImportKanjiDamageSummary = {
   dbPath: string;
   importedLiterals: string[];
   importedWords: string[];
+  importedKanjiCount: number;
+  importedWordCount: number;
+  importedReadingCount: number;
+  skippedNoteCount: number;
+  notesWithoutReadings: string[];
+  notesWithoutWords: string[];
   mediaCopied: number;
   mediaReused: number;
 };
@@ -163,6 +169,12 @@ function getContentType(fileName: string): string | null {
 
 function buildDeckId(deckHash: string) {
   return `kanji-damage-${deckHash.slice(0, 16)}`;
+}
+
+export function isImportableKanjiLiteral(value: string) {
+  const literal = stripHtml(value);
+
+  return [...literal].length === 1 && /\p{Script=Han}/u.test(literal);
 }
 
 export function findKanjiNote(notes: ParsedKanjiDamageNote[], literal: string): ParsedKanjiDamageNote {
@@ -320,13 +332,26 @@ function parseWordComponents(rowHtml: string) {
   let match: RegExpExecArray | null;
 
   while ((match = componentPattern.exec(rowHtml)) !== null) {
+    const literal = stripHtml(match[1]);
+
+    if (!isImportableKanjiLiteral(literal)) {
+      continue;
+    }
+
     components.push({
-      literal: stripHtml(match[1]),
+      literal,
       meaning: stripHtml(match[2]) || null,
     });
   }
 
   return components;
+}
+
+function extractKanjiComponentsFromExpression(expression: string) {
+  return uniq([...expression].filter((literal) => isImportableKanjiLiteral(literal))).map((literal) => ({
+    literal,
+    meaning: null,
+  }));
 }
 
 function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
@@ -356,6 +381,8 @@ function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
     return null;
   }
 
+  const components = parseWordComponents(rowHtml);
+
   return {
     id: buildWordId(expression, reading),
     expression,
@@ -363,7 +390,7 @@ function parseFullJukugoRow(rowHtml: string): ParsedKanjiDamageWord | null {
     primaryMeaning,
     usefulness,
     meanings,
-    kanji: parseWordComponents(rowHtml),
+    kanji: components.length > 0 ? components : extractKanjiComponentsFromExpression(expression),
   };
 }
 
@@ -388,10 +415,7 @@ function parseFirstJukugo(fields: KanjiDamageFields): ParsedKanjiDamageWord[] {
       primaryMeaning,
       usefulness,
       meanings: primaryMeaning ? [primaryMeaning] : [],
-      kanji: [...expression].map((literal) => ({
-        literal,
-        meaning: null,
-      })),
+      kanji: extractKanjiComponentsFromExpression(expression),
     },
   ];
 }
@@ -612,7 +636,6 @@ function importReadingRecords(params: {
 export async function importKanjiDamage(
   options: ImportKanjiDamageOptions,
 ): Promise<ImportKanjiDamageSummary> {
-  const literal = options.literal ?? "具";
   const dbPath = options.dbPath ?? process.env.AMIKA_DB_PATH ?? defaultDatabasePath;
   const mediaRoot = options.mediaRoot ?? join(process.cwd(), ".var", "media");
   const now = options.now ?? new Date().toISOString();
@@ -625,11 +648,19 @@ export async function importKanjiDamage(
   try {
     runMigrations(appDb);
 
-    const note = findKanjiNote(readKanjiDamageNotes(ankiDb), literal);
-    let mediaAssetId: string | null = null;
+    const notes = readKanjiDamageNotes(ankiDb);
+    const notesToImport = options.literal
+      ? [findKanjiNote(notes, options.literal)]
+      : notes.filter((note) => isImportableKanjiLiteral(note.fields.Kanji));
+    const skippedNoteCount = options.literal ? 0 : notes.length - notesToImport.length;
+    const importedLiterals: string[] = [];
+    const importedWords: string[] = [];
+    const importedWordIds = new Set<string>();
+    const notesWithoutReadings: string[] = [];
+    const notesWithoutWords: string[] = [];
+    let importedReadingCount = 0;
     let mediaCopied = 0;
     let mediaReused = 0;
-    const strokeImageFileName = extractFirstImageSrc(note.fields["Stroke order"] ?? "");
 
     upsertSourceDeck(appDb, {
       id: deckId,
@@ -640,62 +671,92 @@ export async function importKanjiDamage(
       importedAt: now,
     });
 
-    if (strokeImageFileName) {
-      const mediaResult = await importMediaAsset({
-        appDb,
-        zip: extracted.zip,
-        mediaMap: extracted.mediaMap,
-        sourceDeckId: deckId,
-        mediaRoot,
-        originalFileName: strokeImageFileName,
-      });
-      mediaAssetId = mediaResult.mediaAssetId;
-      mediaCopied = mediaResult.copied ? 1 : 0;
-      mediaReused = mediaResult.copied ? 0 : 1;
-    }
-
-    const parsedWords = parseKanjiDamageWords(note.fields);
-    const parsedReadings = parseKanjiDamageReadings(note.fields);
-    const importOne = appDb.transaction(() => {
-      importKanjiRecord({
-        appDb,
-        deckId,
-        note,
-        mediaAssetId,
-        now,
-      });
-
+    for (const note of notesToImport) {
       const sourceRecordId = `${deckId}-note-${note.noteId}`;
-      importReadingRecords({
-        appDb,
-        kanjiLiteral: note.fields.Kanji,
-        readings: parsedReadings,
-        sourceRecordId,
-      });
+      const strokeImageFileName = extractFirstImageSrc(note.fields["Stroke order"] ?? "");
+      let mediaAssetId: string | null = null;
 
-      for (const word of parsedWords) {
-        importWordRecord({
+      if (strokeImageFileName) {
+        const mediaResult = await importMediaAsset({
           appDb,
-          word,
-          sourceRecordId,
+          zip: extracted.zip,
+          mediaMap: extracted.mediaMap,
+          sourceDeckId: deckId,
+          mediaRoot,
+          originalFileName: strokeImageFileName,
+        });
+        mediaAssetId = mediaResult.mediaAssetId;
+        mediaCopied += mediaResult.copied ? 1 : 0;
+        mediaReused += mediaResult.copied ? 0 : 1;
+      }
+
+      const parsedWords = parseKanjiDamageWords(note.fields);
+      const parsedReadings = parseKanjiDamageReadings(note.fields);
+
+      if (parsedReadings.length === 0) {
+        notesWithoutReadings.push(note.fields.Kanji);
+      }
+
+      if (parsedWords.length === 0) {
+        notesWithoutWords.push(note.fields.Kanji);
+      }
+
+      const importOne = appDb.transaction(() => {
+        importKanjiRecord({
+          appDb,
+          deckId,
+          note,
+          mediaAssetId,
           now,
         });
+
+        importReadingRecords({
+          appDb,
+          kanjiLiteral: note.fields.Kanji,
+          readings: parsedReadings,
+          sourceRecordId,
+        });
+
+        for (const word of parsedWords) {
+          importWordRecord({
+            appDb,
+            word,
+            sourceRecordId,
+            now,
+          });
+        }
+      });
+      importOne();
+
+      for (const word of parsedWords) {
+        if (!importedWordIds.has(word.id)) {
+          importedWordIds.add(word.id);
+          importedWords.push(word.expression);
+        }
       }
-    });
-    importOne();
 
-    const importedKanji = getKanjiByLiteral(appDb, literal);
+      importedLiterals.push(note.fields.Kanji);
+      importedReadingCount += parsedReadings.length;
 
-    if (!importedKanji) {
-      throw new Error(`Import did not create kanji row for ${literal}`);
+      const importedKanji = getKanjiByLiteral(appDb, note.fields.Kanji);
+
+      if (!importedKanji) {
+        throw new Error(`Import did not create kanji row for ${note.fields.Kanji}`);
+      }
     }
 
     return {
       deckId,
       deckHash,
       dbPath,
-      importedLiterals: [literal],
-      importedWords: parsedWords.map((word) => word.expression),
+      importedLiterals,
+      importedWords,
+      importedKanjiCount: importedLiterals.length,
+      importedWordCount: importedWordIds.size,
+      importedReadingCount,
+      skippedNoteCount,
+      notesWithoutReadings,
+      notesWithoutWords,
       mediaCopied,
       mediaReused,
     };
@@ -743,10 +804,35 @@ function parseCliArgs(argv: string[]): ImportKanjiDamageOptions {
   return options;
 }
 
+function summarizeList(values: string[]) {
+  return {
+    count: values.length,
+    preview: values.slice(0, 20),
+  };
+}
+
+function toCliSummary(summary: ImportKanjiDamageSummary) {
+  return {
+    deckId: summary.deckId,
+    deckHash: summary.deckHash,
+    dbPath: summary.dbPath,
+    importedKanjiCount: summary.importedKanjiCount,
+    importedWordCount: summary.importedWordCount,
+    importedReadingCount: summary.importedReadingCount,
+    skippedNoteCount: summary.skippedNoteCount,
+    mediaCopied: summary.mediaCopied,
+    mediaReused: summary.mediaReused,
+    importedLiterals: summarizeList(summary.importedLiterals),
+    importedWords: summarizeList(summary.importedWords),
+    notesWithoutReadings: summarizeList(summary.notesWithoutReadings),
+    notesWithoutWords: summarizeList(summary.notesWithoutWords),
+  };
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const summary = await importKanjiDamage(parseCliArgs(process.argv.slice(2)));
-    console.log(JSON.stringify(summary, null, 2));
+    console.log(JSON.stringify(toCliSummary(summary), null, 2));
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

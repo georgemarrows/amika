@@ -16,6 +16,7 @@
     "test:client": "bun test ./client/src/**/*.test.ts",
     "test:server": "node --import tsx --test ./server/src/app.test.ts",
     "test:db": "node --import tsx --test ./server/src/db/*.test.ts ./scripts/*.test.ts",
+    "test:soak": "node --import tsx --test ./soaktest/*.test.ts",
     "typecheck": "tsc -p client/tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

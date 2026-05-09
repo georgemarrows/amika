@@ -11,15 +11,16 @@ Minimal `T-1000` scaffold:
 - `bun install`
 - `bun run dev`
 - `bun run db:migrate`
-- `bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg --literal 具`
+- `bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg`
 - `bun run build`
 - `bun run test`
+- `bun run test:soak`
 
 ## Rebuild Local Database State
 
 The project uses a local SQLite database at `.var/amika.sqlite`. The `.var/` directory is runtime state and is intentionally ignored by version control.
 
-To rebuild the current T-1010e state from a fresh checkout:
+To rebuild the current dictionary state from a fresh checkout:
 
 1. Install dependencies:
 
@@ -35,10 +36,10 @@ To rebuild the current T-1010e state from a fresh checkout:
 
 3. Put `Official_KanjiDamage_deck_REORDERED.apkg` in the repo root. APKG files are ignored by version control, so this file must be supplied locally.
 
-4. Import the current one-kanji fixture:
+4. Import the Kanji Damage kanji, readings, stroke-order images, and example words:
 
    ```sh
-   bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg --literal 具
+   bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg
    ```
 
 This creates:
@@ -46,7 +47,13 @@ This creates:
 - `.var/amika.sqlite`
 - `.var/media/kanji-damage/<hash>.png`
 
-The importer currently loads the Kanji Damage note for `具`, its source provenance, minimal kanji metadata, its on/kun readings, its stroke-order image, and its jukugo words. Word import includes readings, meanings, usefulness stars, word-kanji links, and minimal kanji stubs needed by those links. Future T-1010 tasks will extend the schema and importer for mnemonics, components, and relations.
+The importer loads real single-character Han kanji notes from Kanji Damage, their source provenance, minimal kanji metadata, on/kun readings, stroke-order images, and jukugo words. Word import includes readings, meanings, usefulness stars, word-kanji links, and minimal kanji stubs needed by those links. Kanji Damage primitive notes such as image radicals, letter placeholders, and kana-like component entries are intentionally skipped until component import work lands. Future T-1010 tasks will extend the schema and importer for mnemonics, components, and relations.
+
+For focused debugging, import a single note with `--literal`:
+
+```sh
+bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg --literal 具
+```
 
 To verify the current imported row:
 
@@ -65,6 +72,14 @@ Expected output:
 具体的|ぐたいてき|concrete/ in practice|★★★☆☆
 具合|ぐあい|condition|★★★☆☆
 ```
+
+To verify the full import scale:
+
+```sh
+sqlite3 .var/amika.sqlite "select 'kanji', count(*) from kanji union all select 'words', count(*) from words union all select 'readings', count(*) from kanji_readings union all select 'media', count(*) from media_assets;"
+```
+
+`bun run test` runs the fast test suite. `bun run test:soak` runs optional full-deck import checks against the local APKG and is intentionally kept out of the default loop.
 
 The DB/import scripts and local HTTP server run through Node because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.
 

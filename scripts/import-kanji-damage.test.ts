@@ -9,6 +9,7 @@ import {
   extractFirstImageSrc,
   findKanjiNote,
   importKanjiDamage,
+  isImportableKanjiLiteral,
   mapAnkiFields,
   parseKanjiDamageReadings,
   parseKanjiDamageWords,
@@ -85,6 +86,31 @@ describe("Kanji Damage parser", () => {
       { literal: "道", meaning: "street" },
       { literal: "具", meaning: "tool" },
     ]);
+  });
+
+  test("falls back to Han characters when jukugo rows have no component anchors", () => {
+    const words = parseKanjiDamageWords({
+      "Full jukugo": `
+        <table><tbody><tr>
+          <td><ruby><span class="kanji_character"><ruby>朝ごはん<rp>(</rp><rt>あさごはん</rt><rp>)</rp></ruby></span></ruby></td>
+          <td><p>
+            breakfast
+            <span class="usefulness-stars" title="4 out of 5 stars">★★★★☆</span>
+          </p></td>
+        </tr></tbody></table>
+      `,
+    });
+
+    assert.equal(words.length, 1);
+    assert.equal(words[0].expression, "朝ごはん");
+    assert.deepEqual(words[0].kanji, [{ literal: "朝", meaning: null }]);
+  });
+
+  test("recognizes importable kanji literals and skips primitive placeholders", () => {
+    assert.equal(isImportableKanjiLiteral("具"), true);
+    assert.equal(isImportableKanjiLiteral("具体的"), false);
+    assert.equal(isImportableKanjiLiteral("ム"), false);
+    assert.equal(isImportableKanjiLiteral('<img src="heel.jpg" />'), false);
   });
 
   test("parses minimal on-only kanji readings", () => {
@@ -260,6 +286,12 @@ describe("Kanji Damage importer", () => {
 
         assert.deepEqual(first.importedLiterals, ["具"]);
         assert.deepEqual(first.importedWords, ["道具", "家具", "具体的", "具合"]);
+        assert.equal(first.importedKanjiCount, 1);
+        assert.equal(first.importedWordCount, 4);
+        assert.equal(first.importedReadingCount, 1);
+        assert.equal(first.skippedNoteCount, 0);
+        assert.deepEqual(first.notesWithoutReadings, []);
+        assert.deepEqual(first.notesWithoutWords, []);
         assert.equal(first.mediaCopied, 1);
         assert.equal(second.mediaReused, 1);
         assert.equal(kanji?.primaryMeaning, "tool");

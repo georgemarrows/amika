@@ -10,7 +10,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 
 ## Next up
 - [x] T-30000a load a single kanji with all readings.
-- [ ] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
+- [x] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
 - [ ] T-30100 Search
 - [ ] T-30200 Simple SRS implementation
 - [ ] T-30300 Import Anki status?

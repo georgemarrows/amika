@@ -1,0 +1,7 @@
+Importer
+- [ ] only 家 listed as a kanji for 建築家. Similar problem for 専門家
+- [ ] first 5 words aren't words
+
+UI
+- [ ] display kun reading about reading description. Currently displays reading vertically to left of descriptino. For example, ![For example](bugpics/kun_reading_bug.png). Keep stars on same row as reading, justified right.
+- [ ] Kanji and Word display pages should clear pane stack and just display their lists. That includes the Home page
