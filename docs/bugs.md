@@ -3,5 +3,6 @@ Importer
 - [x] first 5 words aren't words
 
 UI
-- [ ] display kun reading about reading description. Currently displays reading vertically to left of descriptino. For example, ![For example](bugpics/kun_reading_bug.png). Keep stars on same row as reading, justified right.
-- [ ] Kanji and Word display pages should clear pane stack and just display their lists. That includes the Home page
+- [x] display kun reading about reading description. Currently displays reading vertically to left of descriptino. For example, ![For example](bugpics/kun_reading_bug.png). Keep stars on same row as reading, justified right.
+- [x] Kanji and Word display pages should clear pane stack and just display their lists. That includes removing the Home page
+- [x] If a pane already exists for a kanji or word, clicking on the kanji/word again should scroll back to the existing pane. Instead nothing happens, which is confusing.

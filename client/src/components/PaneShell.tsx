@@ -1,11 +1,13 @@
 import { For, createEffect, onCleanup, onMount } from "solid-js";
 
 import type { HomePageData } from "../../../shared/home-data";
+import { runClassAnimationAfterEvent } from "../dom/class-animation";
 import { createPaneState, describePane } from "../state/pane-state";
 import { PaneBody } from "./PaneBody";
 
 export function PaneShell(props: { state: HomePageData }) {
   let panesElement: HTMLDivElement | undefined;
+  let handledScrollRequestId = -1;
   const paneState = createPaneState();
 
   onMount(() => {
@@ -20,8 +22,30 @@ export function PaneShell(props: { state: HomePageData }) {
   });
 
   createEffect(() => {
-    paneState.panes();
-    queueMicrotask(() => panesElement?.lastElementChild?.scrollIntoView({ inline: "end", behavior: "smooth" }));
+    const panes = paneState.panes();
+    const target = paneState.scrollTarget();
+
+    if (target.requestId === handledScrollRequestId) {
+      return;
+    }
+    handledScrollRequestId = target.requestId;
+
+    queueMicrotask(() => {
+      const targetIndex = panes.indexOf(target.key);
+      const targetElement = targetIndex >= 0 ? panesElement?.children.item(targetIndex) : null;
+
+      if (targetElement && target.flash) {
+        runClassAnimationAfterEvent({
+          eventTarget: panesElement,
+          eventName: "scrollend",
+          element: targetElement,
+          className: "pane-scroll-flash",
+          fallbackMs: 500,
+          durationMs: 900,
+        });
+      }
+      targetElement?.scrollIntoView({ inline: "end", behavior: "smooth" });
+    });
   });
 
   return (

@@ -9,6 +9,8 @@
   --color-dimmer: #5a5a5a;
   --color-accent: #7aa7d9;
   --color-accent-2: #a48bd9;
+  --color-pane-flash: rgba(122, 167, 217, 0.14);
+  --color-pane-flash-border: rgba(122, 167, 217, 0.42);
   --color-srs: #c99a3a;
   --color-srs-bg: #3a2e18;
   --color-ok: #78b068;
@@ -188,6 +190,22 @@ code,
 .pane.home {
   width: var(--size-home-pane-width);
   min-width: var(--size-home-pane-width);
+}
+
+.pane-scroll-flash {
+  animation: pane-scroll-flash 850ms ease-out;
+}
+
+@keyframes pane-scroll-flash {
+  0% {
+    background: var(--color-pane-flash);
+    box-shadow: inset 0 0 0 2px var(--color-pane-flash-border);
+  }
+
+  100% {
+    background: var(--color-bg);
+    box-shadow: inset 0 0 0 0 transparent;
+  }
 }
 
 .pane-head {
@@ -401,16 +419,20 @@ code,
 }
 
 .reading-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--gap-sm);
 }
 
 .reading-row {
-  display: inline-flex;
+  display: grid;
+  width: 100%;
   max-width: 100%;
+  grid-template-areas:
+    "reading stars"
+    "meaning meaning";
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: baseline;
-  gap: var(--gap-sm);
+  gap: var(--gap-xs) var(--gap-md);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--gap-xs) var(--gap-md);
@@ -418,13 +440,23 @@ code,
 }
 
 .reading-text {
+  grid-area: reading;
+  min-width: 0;
   color: var(--color-text);
   font-size: 16px;
 }
 
 .reading-meaning {
+  grid-area: meaning;
+  min-width: 0;
   color: var(--color-dim);
   font-size: 12px;
+}
+
+.reading-row .word-stars {
+  grid-area: stars;
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .metadata-grid {

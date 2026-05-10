@@ -19,10 +19,17 @@ export type PaneDescriptor = {
 
 export type PaneState = {
   panes: Accessor<PaneKey[]>;
+  scrollTarget: Accessor<PaneScrollTarget>;
   openFromPane: (key: PaneKey, paneIndex: number) => void;
   openFromRoot: (key: PaneKey) => void;
   close: (key: PaneKey) => void;
   closeRightmost: () => void;
+};
+
+export type PaneScrollTarget = {
+  key: PaneKey;
+  requestId: number;
+  flash: boolean;
 };
 
 export function createInitialPaneKeys(): PaneKey[] {
@@ -31,11 +38,32 @@ export function createInitialPaneKeys(): PaneKey[] {
 
 export function createPaneState(initialPanes: PaneKey[] = createInitialPaneKeys()): PaneState {
   const [panes, setPanes] = createSignal<PaneKey[]>(initialPanes);
+  const [scrollTarget, setScrollTarget] = createSignal<PaneScrollTarget>({
+    key: initialPanes.at(-1) ?? homePaneKey,
+    requestId: 0,
+    flash: false,
+  });
+
+  const requestScrollTo = (key: PaneKey, flash = false) => {
+    setScrollTarget((current) => ({ key, requestId: current.requestId + 1, flash }));
+  };
 
   return {
     panes,
-    openFromPane: (key, paneIndex) => setPanes((current) => openPane(current, key, paneIndex)),
-    openFromRoot: (key) => setPanes((current) => openPane(current, key)),
+    scrollTarget,
+    openFromPane: (key, paneIndex) => {
+      let shouldFlash = false;
+
+      setPanes((current) => {
+        shouldFlash = willScrollToExistingPane(current, key, paneIndex);
+        return openPane(current, key, paneIndex);
+      });
+      requestScrollTo(key, shouldFlash);
+    },
+    openFromRoot: (key) => {
+      setPanes(openRootPane(key));
+      requestScrollTo(key);
+    },
     close: (key) => setPanes((current) => closePane(current, key)),
     closeRightmost: () => setPanes(closeRightmostPane),
   };
@@ -73,6 +101,16 @@ export function openPane(panes: PaneKey[], key: PaneKey, afterIndex: number | nu
   }
 
   return [...keptPanes, key];
+}
+
+export function openRootPane(key: PaneKey): PaneKey[] {
+  return [key];
+}
+
+export function willScrollToExistingPane(panes: PaneKey[], key: PaneKey, afterIndex: number | null = null): boolean {
+  const keptPanes = afterIndex === null ? panes : panes.slice(0, afterIndex + 1);
+
+  return keptPanes.includes(key);
 }
 
 export function closePane(panes: PaneKey[], key: PaneKey): PaneKey[] {
