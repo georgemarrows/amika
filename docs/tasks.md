@@ -12,7 +12,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [x] T-30000a load a single kanji with all readings.
 - [x] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
 - [x] Out of order: full review of existing codebase - see docs/review*.md
-- [ ] At some point: review review comments and fix most important.
+- [ ] At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
 - [ ] T-30100 Search
 - [ ] T-30200 Simple SRS implementation
 - [ ] T-30300 Import Anki status?
@@ -73,6 +73,9 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
   - [ ] T-1010f Relations: add kanji relations; parse Kanji Damage lookalikes and used-in data; expose relations through the kanji endpoint and render compact related-kanji sections. · R-DATA-002, R-DATA-006, R-CMP-001..003, R-DICT-002
   - [ ] T-1010g Full import hardening: make the APKG import idempotent, transactional, and repeatable across the full deck; add import summaries, parser fixtures/tests, error reporting, and media cleanup behavior. · R-DICT-002, R-DICT-005, R-PERS-001
 
+
+## UI improvements
+* Full keyboard nav
 
 ## Export: dump all user data to a single JSON/SQLite archive. · R-PERS-002
 
