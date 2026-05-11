@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Amika Search Prototype</title>
+<style>
+  :root {
+    --bg: #191919;
+    --bg-2: #202020;
+    --bg-3: #2a2a2a;
+    --bg-4: #323232;
+    --border: #303030;
+    --border-strong: #444;
+    --text: #e8e8e8;
+    --dim: #969696;
+    --dimmer: #666;
+    --accent: #7aa7d9;
+    --accent-soft: rgba(122, 167, 217, 0.16);
+    --kanji: #bca7e8;
+    --word: #86bddf;
+    --content: #e0b86a;
+    --ok: #83b978;
+    --radius: 8px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(122, 167, 217, 0.08), transparent 38%),
+      var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  .jp,
+  .jp * {
+    font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+  }
+
+  .stage {
+    min-height: 100%;
+    display: grid;
+    place-items: start center;
+    padding: 11vh var(--space-4) var(--space-5);
+  }
+
+  .palette {
+    width: min(680px, 100%);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-2);
+    box-shadow: var(--shadow);
+  }
+
+  .search-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    align-items: center;
+    min-height: 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .search-icon {
+    display: grid;
+    place-items: center;
+    color: var(--dim);
+  }
+
+  .search-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2;
+  }
+
+  #searchInput {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: var(--text);
+    background: transparent;
+    font-size: 17px;
+    letter-spacing: 0;
+  }
+
+  #searchInput::placeholder {
+    color: var(--dimmer);
+  }
+
+  .shortcut {
+    margin-right: var(--space-3);
+    padding: 2px 6px;
+    border: 1px solid var(--border-strong);
+    border-radius: 5px;
+    color: var(--dim);
+    background: var(--bg-3);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+  }
+
+  .results {
+    max-height: min(67vh, 620px);
+    overflow-y: auto;
+  }
+
+  .empty {
+    padding: 34px var(--space-5);
+    color: var(--dim);
+    text-align: center;
+  }
+
+  .empty-queries {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .query-chip {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-3);
+    color: var(--text);
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  .query-chip:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-4);
+  }
+
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 32px;
+    padding: 7px var(--space-5);
+    border-bottom: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 12px;
+  }
+
+  .pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--accent);
+    animation: pulse 900ms ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.75);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .section {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section:last-child {
+    border-bottom: 0;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px var(--space-5) 6px;
+    color: var(--dimmer);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .section-count {
+    color: var(--dimmer);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .result {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    align-items: center;
+    padding: 9px var(--space-5);
+    cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+
+  .result:hover,
+  .result.active {
+    background: var(--bg-3);
+    border-left-color: var(--accent);
+  }
+
+  .glyph {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    min-height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .glyph.word {
+    color: var(--word);
+    font-size: 17px;
+  }
+
+  .glyph.kanji {
+    color: var(--kanji);
+  }
+
+  .glyph.content {
+    color: var(--content);
+    font-size: 17px;
+  }
+
+  .main {
+    min-width: 0;
+  }
+
+  .title {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+    font-weight: 650;
+  }
+
+  .title-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reading {
+    color: var(--dim);
+    font-size: 12px;
+    font-weight: 450;
+  }
+
+  .subtitle {
+    margin-top: 1px;
+    overflow: hidden;
+    color: var(--dim);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  mark {
+    border-radius: 3px;
+    background: var(--accent-soft);
+    color: var(--text);
+    padding: 0 1px;
+  }
+
+  .type {
+    color: var(--dimmer);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .skeleton {
+    display: grid;
+    grid-template-columns: 46px 1fr 54px;
+    gap: var(--space-3);
+    align-items: center;
+    padding: 9px var(--space-5);
+  }
+
+  .sk-box,
+  .sk-line {
+    overflow: hidden;
+    position: relative;
+    border-radius: 6px;
+    background: var(--bg-3);
+  }
+
+  .sk-box {
+    width: 40px;
+    height: 40px;
+  }
+
+  .sk-lines {
+    display: grid;
+    gap: 7px;
+  }
+
+  .sk-line {
+    height: 10px;
+  }
+
+  .sk-line.short {
+    width: 58%;
+  }
+
+  .sk-pill {
+    width: 46px;
+    height: 11px;
+  }
+
+  .sk-box::after,
+  .sk-line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+    animation: shimmer 900ms infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .stage {
+      padding-top: var(--space-4);
+    }
+
+    .palette {
+      border-radius: 0;
+    }
+
+    .search-row {
+      grid-template-columns: 40px 1fr;
+    }
+
+    .shortcut {
+      display: none;
+    }
+
+    .result {
+      grid-template-columns: 42px minmax(0, 1fr);
+    }
+
+    .type {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="stage">
+  <section class="palette" aria-label="Search prototype">
+    <div class="search-row">
+      <div class="search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m16.5 16.5 4 4"></path>
+        </svg>
+      </div>
+      <input
+        id="searchInput"
+        autocomplete="off"
+        autofocus
+        spellcheck="false"
+        placeholder="Search kanji, words, readings, English..."
+      />
+      <span class="shortcut">⌘K</span>
+    </div>
+    <div id="results" class="results" aria-live="polite"></div>
+  </section>
+</main>
+
+<script>
+const data = [
+  {
+    type: "kanji",
+    group: "Exact kanji",
+    tier: 0,
+    id: "kanji:勉",
+    title: "勉",
+    reading: "ベン",
+    subtitle: "try hard",
+    glyph: "勉",
+    fields: {
+      exact: ["勉"],
+      prefix: ["勉"],
+      alternate: ["べん", "ben", "try hard"]
+    }
+  },
+  {
+    type: "kanji",
+    group: "Exact kanji",
+    tier: 0,
+    id: "kanji:強",
+    title: "強",
+    reading: "キョウ",
+    subtitle: "strong",
+    glyph: "強",
+    fields: {
+      exact: ["強"],
+      prefix: ["強"],
+      alternate: ["きょう", "kyou", "strong"]
+    }
+  },
+  {
+    type: "kanji",
+    group: "Exact kanji",
+    tier: 0,
+    id: "kanji:食",
+    title: "食",
+    reading: "ショク / たべる",
+    subtitle: "eat",
+    glyph: "食",
+    fields: {
+      exact: ["食"],
+      prefix: ["食"],
+      alternate: ["しょく", "たべる", "eat"]
+    }
+  },
+  {
+    type: "word",
+    group: "Exact words",
+    tier: 1,
+    id: "word:勉強",
+    title: "勉強",
+    reading: "べんきょう",
+    subtitle: "study",
+    glyph: "勉強",
+    fields: {
+      exact: ["勉強"],
+      prefix: ["勉強"],
+      alternate: ["べんきょう", "benkyou", "study"]
+    }
+  },
+  {
+    type: "word",
+    group: "Matching words",
+    tier: 2,
+    id: "word:勉強する",
+    title: "勉強する",
+    reading: "べんきょうする",
+    subtitle: "to study",
+    glyph: "勉強",
+    fields: {
+      exact: ["勉強する"],
+      prefix: ["勉強する"],
+      alternate: ["べんきょうする", "benkyou suru", "study"]
+    }
+  },
+  {
+    type: "word",
+    group: "Matching words",
+    tier: 2,
+    id: "word:勉強会",
+    title: "勉強会",
+    reading: "べんきょうかい",
+    subtitle: "study group",
+    glyph: "勉強",
+    fields: {
+      exact: ["勉強会"],
+      prefix: ["勉強会"],
+      alternate: ["べんきょうかい", "study group"]
+    }
+  },
+  {
+    type: "word",
+    group: "Matching words",
+    tier: 2,
+    id: "word:勉学",
+    title: "勉学",
+    reading: "べんがく",
+    subtitle: "study; pursuit of knowledge",
+    glyph: "勉学",
+    fields: {
+      exact: ["勉学"],
+      prefix: ["勉学"],
+      alternate: ["べんがく", "study", "pursuit of knowledge"]
+    }
+  },
+  {
+    type: "word",
+    group: "Matching words",
+    tier: 2,
+    id: "word:強い",
+    title: "強い",
+    reading: "つよい",
+    subtitle: "strong",
+    glyph: "強い",
+    fields: {
+      exact: ["強い"],
+      prefix: ["強い"],
+      alternate: ["つよい", "strong"]
+    }
+  },
+  {
+    type: "word",
+    group: "Matching words",
+    tier: 2,
+    id: "word:食べる",
+    title: "食べる",
+    reading: "たべる",
+    subtitle: "to eat",
+    glyph: "食べ",
+    fields: {
+      exact: ["食べる"],
+      prefix: ["食べる"],
+      alternate: ["たべる", "eat"]
+    }
+  },
+  {
+    type: "word",
+    group: "Reading and English",
+    tier: 3,
+    id: "word:する",
+    title: "する",
+    reading: "する",
+    subtitle: "to do",
+    glyph: "する",
+    fields: {
+      exact: ["する"],
+      prefix: ["する"],
+      alternate: ["do", "to do"]
+    }
+  },
+  {
+    type: "word",
+    group: "Reading and English",
+    tier: 3,
+    id: "word:学生",
+    title: "学生",
+    reading: "がくせい",
+    subtitle: "student",
+    glyph: "学生",
+    fields: {
+      exact: ["学生"],
+      prefix: ["学生"],
+      alternate: ["がくせい", "student"]
+    }
+  },
+  {
+    type: "content",
+    group: "Sentences and exercises",
+    tier: 4,
+    id: "sentence:1",
+    title: "毎朝、日本語を勉強します。",
+    reading: "",
+    subtitle: "I study Japanese every morning.",
+    glyph: "文",
+    fields: {
+      exact: [],
+      prefix: ["毎朝、日本語を勉強します。"],
+      alternate: ["study Japanese every morning", "japanese", "morning", "勉強"]
+    }
+  },
+  {
+    type: "content",
+    group: "Sentences and exercises",
+    tier: 4,
+    id: "sentence:2",
+    title: "先生は宿題を出しました。",
+    reading: "",
+    subtitle: "The teacher assigned homework.",
+    glyph: "文",
+    fields: {
+      exact: [],
+      prefix: ["先生は宿題を出しました。"],
+      alternate: ["teacher assigned homework", "homework"]
+    }
+  },
+  {
+    type: "content",
+    group: "Sentences and exercises",
+    tier: 4,
+    id: "exercise:1",
+    title: "Chapter 7: translate the polite past forms",
+    reading: "",
+    subtitle: "Book exercise · lesson notes",
+    glyph: "Ex",
+    fields: {
+      exact: [],
+      prefix: ["chapter 7", "translate"],
+      alternate: ["polite past forms", "book exercise", "lesson notes"]
+    }
+  }
+];
+
+const tierDelays = new Map([
+  [0, 80],
+  [1, 130],
+  [2, 190],
+  [3, 280],
+  [4, 420]
+]);
+
+const input = document.getElementById("searchInput");
+const resultsEl = document.getElementById("results");
+let activeIndex = 0;
+let requestId = 0;
+let visibleResults = [];
+
+function normalize(value) {
+  return value.trim().toLocaleLowerCase();
+}
+
+function hasJapanese(value) {
+  return /[\u3040-\u30ff\u3400-\u9fff]/.test(value);
+}
+
+function fieldMatches(fields, q, mode) {
+  return fields.some((field) => {
+    const value = normalize(field);
+    if (!value) return false;
+    if (mode === "exact") return value === q;
+    if (mode === "prefix") return value.startsWith(q);
+    return value.includes(q);
+  });
+}
+
+function matchItem(item, rawQuery) {
+  const q = normalize(rawQuery);
+  if (!q) return null;
+
+  if (fieldMatches(item.fields.exact, q, "exact")) {
+    return {
+      ...item,
+      displayGroup: item.type === "kanji" ? "Exact kanji" : "Exact words",
+      matchKind: "exact",
+      score: 1000 - item.tier * 100
+    };
+  }
+
+  if (fieldMatches(item.fields.prefix, q, "prefix")) {
+    return {
+      ...item,
+      displayGroup: item.type === "content" ? "Sentences and exercises" : "Matching words",
+      matchKind: "prefix",
+      score: 700 - item.tier * 80 - item.title.length
+    };
+  }
+
+  if (fieldMatches(item.fields.alternate, q, "prefix")) {
+    return {
+      ...item,
+      displayGroup: item.type === "content" ? "Sentences and exercises" : "Reading and English",
+      matchKind: hasJapanese(rawQuery) ? "related" : "prefix",
+      score: 430 - item.tier * 60 - item.title.length
+    };
+  }
+
+  if (q.length >= 2 && fieldMatches([...item.fields.prefix, ...item.fields.alternate], q, "contains")) {
+    return {
+      ...item,
+      displayGroup: item.type === "content" ? "Sentences and exercises" : "Reading and English",
+      matchKind: "contains",
+      score: 260 - item.tier * 40 - item.title.length
+    };
+  }
+
+  return null;
+}
+
+function searchTier(query, tier) {
+  return data
+    .filter((item) => item.tier === tier)
+    .map((item) => matchItem(item, query))
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "ja"));
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function highlight(value, query) {
+  const safeValue = escapeHtml(value);
+  const q = query.trim();
+  if (!q) return safeValue;
+
+  const index = value.toLocaleLowerCase().indexOf(q.toLocaleLowerCase());
+  if (index === -1) return safeValue;
+
+  return [
+    escapeHtml(value.slice(0, index)),
+    "<mark>",
+    escapeHtml(value.slice(index, index + q.length)),
+    "</mark>",
+    escapeHtml(value.slice(index + q.length))
+  ].join("");
+}
+
+function renderSkeleton() {
+  return `
+    <div class="status-line">
+      <span class="pulse"></span>
+      <span>Searching local library</span>
+    </div>
+    <div class="skeleton">
+      <div class="sk-box"></div>
+      <div class="sk-lines">
+        <div class="sk-line"></div>
+        <div class="sk-line short"></div>
+      </div>
+      <div class="sk-line sk-pill"></div>
+    </div>
+  `;
+}
+
+function resultHtml(item, index, query) {
+  const reading = item.reading
+    ? `<span class="reading jp">${escapeHtml(item.reading)}</span>`
+    : "";
+  return `
+    <div class="result ${index === activeIndex ? "active" : ""}" data-index="${index}" data-id="${escapeHtml(item.id)}">
+      <div class="glyph ${item.type} jp">${escapeHtml(item.glyph)}</div>
+      <div class="main">
+        <div class="title jp">
+          <span class="title-text">${highlight(item.title, query)}</span>
+          ${reading}
+        </div>
+        <div class="subtitle">${highlight(item.subtitle, query)}</div>
+      </div>
+      <div class="type">${escapeHtml(item.type)}</div>
+    </div>
+  `;
+}
+
+function renderResults(query, isSearching) {
+  if (!query.trim()) {
+    resultsEl.innerHTML = `
+      <div class="empty">
+        <div>Type a query</div>
+        <div class="empty-queries">
+          ${["勉", "勉強", "べん", "study", "homework"].map((q) => (
+            `<button class="query-chip" type="button" data-query="${escapeHtml(q)}">${escapeHtml(q)}</button>`
+          )).join("")}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (visibleResults.length === 0) {
+    resultsEl.innerHTML = isSearching
+      ? renderSkeleton()
+      : `<div class="empty">No results</div>`;
+    return;
+  }
+
+  const grouped = new Map();
+  for (const item of visibleResults) {
+    const group = item.displayGroup ?? item.group;
+    if (!grouped.has(group)) grouped.set(group, []);
+    grouped.get(group).push(item);
+  }
+
+  let index = 0;
+  const html = [...grouped.entries()].map(([group, items]) => {
+    const rows = items.map((item) => resultHtml(item, index++, query)).join("");
+    return `
+      <section class="section">
+        <div class="section-title">
+          <span>${escapeHtml(group)}</span>
+          <span class="section-count">${items.length}</span>
+        </div>
+        ${rows}
+      </section>
+    `;
+  }).join("");
+
+  const status = isSearching
+    ? `<div class="status-line"><span class="pulse"></span><span>More results may appear</span></div>`
+    : "";
+  resultsEl.innerHTML = `${status}${html}`;
+}
+
+function runSearch() {
+  const query = input.value;
+  const currentRequest = ++requestId;
+  activeIndex = 0;
+  visibleResults = [];
+
+  if (!query.trim()) {
+    renderResults(query, false);
+    return;
+  }
+
+  renderResults(query, true);
+
+  const tiers = [...tierDelays.keys()];
+  let pending = tiers.length;
+
+  for (const tier of tiers) {
+    window.setTimeout(() => {
+      if (currentRequest !== requestId) return;
+
+      visibleResults = [...visibleResults, ...searchTier(query, tier)]
+        .sort((a, b) => a.tier - b.tier || b.score - a.score || a.title.localeCompare(b.title, "ja"));
+      pending -= 1;
+      renderResults(query, pending > 0);
+    }, tierDelays.get(tier));
+  }
+}
+
+function moveActive(delta) {
+  if (visibleResults.length === 0) return;
+  activeIndex = (activeIndex + delta + visibleResults.length) % visibleResults.length;
+  renderResults(input.value, false);
+  const active = resultsEl.querySelector(".result.active");
+  active?.scrollIntoView({ block: "nearest" });
+}
+
+input.addEventListener("input", runSearch);
+
+input.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    moveActive(1);
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    moveActive(-1);
+  }
+
+  if (event.key === "Enter" && visibleResults[activeIndex]) {
+    event.preventDefault();
+    const item = visibleResults[activeIndex];
+    input.value = item.title;
+    runSearch();
+  }
+});
+
+resultsEl.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-query]");
+  if (chip) {
+    input.value = chip.dataset.query;
+    input.focus();
+    runSearch();
+    return;
+  }
+
+  const row = event.target.closest("[data-index]");
+  if (!row) return;
+  activeIndex = Number(row.dataset.index);
+  const item = visibleResults[activeIndex];
+  if (item) {
+    input.value = item.title;
+    input.focus();
+    runSearch();
+  }
+});
+
+window.addEventListener("keydown", (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    input.focus();
+    input.select();
+  }
+});
+
+renderResults("", false);
+</script>
+</body>
+</html>

@@ -9,6 +9,8 @@
 
 ## Documentation maintenance
 - When completing an item from docs/tasks.md, update its checkbox/status in the same change.
+- For exploratory design docs, clearly separate immediate implementation scope from future ideas.
+- For HTML design docs, prefer simple boxed sections and editable styling; use docs/30100/search-design.html as a reference.
 - When adding or changing local runtime state, document the fresh-checkout rebuild path in README.md or docs/; tracked files must be sufficient to recreate ignored state.
 - When adding a direct dependency, add or update its one-line rationale in docs/dependencies.md.
 - For foundational choices likely to be revisited, add a short ADR under docs/adrs/ using Context, Decision, Consequences.
