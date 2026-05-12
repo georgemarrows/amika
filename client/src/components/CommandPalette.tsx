@@ -9,15 +9,15 @@ type CommandPaletteProps = {
   onOpenResult: (key: SearchTargetPaneKey) => void;
 };
 
+type SearchStatus = "idle" | "debouncing" | "loading-quiet" | "loading-visible" | "ready" | "empty" | "error";
+
 export function CommandPalette(props: CommandPaletteProps) {
   let inputElement: HTMLInputElement | undefined;
   const [query, setQuery] = createSignal("");
   const [items, setItems] = createSignal<SearchResultItem[]>([]);
   const [activeIndex, setActiveIndex] = createSignal(0);
-  const [loading, setLoading] = createSignal(false);
-  const [showSpinner, setShowSpinner] = createSignal(false);
+  const [status, setStatus] = createSignal<SearchStatus>("idle");
   const [isComposing, setIsComposing] = createSignal(false);
-  const [error, setError] = createSignal<string | null>(null);
 
   createEffect(() => {
     if (!props.open) {
@@ -32,10 +32,8 @@ export function CommandPalette(props: CommandPaletteProps) {
       setQuery("");
       setItems([]);
       setActiveIndex(0);
-      setLoading(false);
-      setShowSpinner(false);
+      setStatus("idle");
       setIsComposing(false);
-      setError(null);
       return;
     }
 
@@ -44,23 +42,21 @@ export function CommandPalette(props: CommandPaletteProps) {
     if (currentQuery.trim() === "") {
       setItems([]);
       setActiveIndex(0);
-      setLoading(false);
-      setShowSpinner(false);
-      setError(null);
+      setStatus("idle");
       return;
     }
 
     const controller = new AbortController();
     let spinnerTimeoutId: number | undefined;
 
-    setLoading(true);
-    setShowSpinner(false);
-    setError(null);
+    setStatus("debouncing");
 
     const timeoutId = window.setTimeout(() => {
+      setStatus("loading-quiet");
+
       spinnerTimeoutId = window.setTimeout(() => {
         if (!controller.signal.aborted) {
-          setShowSpinner(true);
+          setStatus("loading-visible");
         }
       }, 300);
 
@@ -68,7 +64,7 @@ export function CommandPalette(props: CommandPaletteProps) {
         .then((response) => {
           setItems(response.items);
           setActiveIndex(0);
-          setError(null);
+          setStatus(response.items.length === 0 ? "empty" : "ready");
         })
         .catch((searchError) => {
           if (searchError instanceof DOMException && searchError.name === "AbortError") {
@@ -77,13 +73,7 @@ export function CommandPalette(props: CommandPaletteProps) {
 
           setItems([]);
           setActiveIndex(0);
-          setError("Search failed");
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setLoading(false);
-            setShowSpinner(false);
-          }
+          setStatus("error");
         });
     }, 80);
 
@@ -150,6 +140,7 @@ export function CommandPalette(props: CommandPaletteProps) {
   };
 
   const subtitle = (item: SearchResultItem) => (item.subtitle === "" ? "No meaning imported yet" : item.subtitle);
+  const showSpinner = () => status() === "loading-visible";
 
   return (
     <Show when={props.open}>
@@ -186,15 +177,15 @@ export function CommandPalette(props: CommandPaletteProps) {
           </div>
 
           <div class="command-results" aria-live="polite">
-            <Show when={query().trim() === ""}>
+            <Show when={status() === "idle"}>
               <div class="command-empty">Type a query</div>
             </Show>
 
-            <Show when={query().trim() !== "" && error()}>
-              <div class="command-empty">{error()}</div>
+            <Show when={status() === "error"}>
+              <div class="command-empty">Search failed</div>
             </Show>
 
-            <Show when={query().trim() !== "" && !loading() && !error() && items().length === 0}>
+            <Show when={status() === "empty"}>
               <div class="command-empty">No results</div>
             </Show>
 
