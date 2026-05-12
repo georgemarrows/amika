@@ -19,6 +19,7 @@
 ## Tooling
 - uses jujutsu / jj NOT git
 - bun for JS tooling and server (but no runtime dependencies on Bun-specific APIs)
+- George typically keeps the dev server running on the standard port; check/reuse it before starting another server.
 - Run code that imports `better-sqlite3` with Node/tsx, not `bun`; Bun cannot load this native module in this project.
 
 

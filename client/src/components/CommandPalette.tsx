@@ -15,6 +15,8 @@ export function CommandPalette(props: CommandPaletteProps) {
   const [items, setItems] = createSignal<SearchResultItem[]>([]);
   const [activeIndex, setActiveIndex] = createSignal(0);
   const [loading, setLoading] = createSignal(false);
+  const [showSpinner, setShowSpinner] = createSignal(false);
+  const [isComposing, setIsComposing] = createSignal(false);
   const [error, setError] = createSignal<string | null>(null);
 
   createEffect(() => {
@@ -31,6 +33,8 @@ export function CommandPalette(props: CommandPaletteProps) {
       setItems([]);
       setActiveIndex(0);
       setLoading(false);
+      setShowSpinner(false);
+      setIsComposing(false);
       setError(null);
       return;
     }
@@ -41,14 +45,24 @@ export function CommandPalette(props: CommandPaletteProps) {
       setItems([]);
       setActiveIndex(0);
       setLoading(false);
+      setShowSpinner(false);
       setError(null);
       return;
     }
 
     const controller = new AbortController();
+    let spinnerTimeoutId: number | undefined;
+
+    setLoading(true);
+    setShowSpinner(false);
+    setError(null);
+
     const timeoutId = window.setTimeout(() => {
-      setLoading(true);
-      setError(null);
+      spinnerTimeoutId = window.setTimeout(() => {
+        if (!controller.signal.aborted) {
+          setShowSpinner(true);
+        }
+      }, 300);
 
       void fetchSearchResults(currentQuery, controller.signal)
         .then((response) => {
@@ -68,12 +82,16 @@ export function CommandPalette(props: CommandPaletteProps) {
         .finally(() => {
           if (!controller.signal.aborted) {
             setLoading(false);
+            setShowSpinner(false);
           }
         });
     }, 80);
 
     onCleanup(() => {
       window.clearTimeout(timeoutId);
+      if (spinnerTimeoutId !== undefined) {
+        window.clearTimeout(spinnerTimeoutId);
+      }
       controller.abort();
     });
   });
@@ -122,6 +140,10 @@ export function CommandPalette(props: CommandPaletteProps) {
     }
 
     if (event.key === "Enter") {
+      if (event.isComposing || isComposing() || event.keyCode === 229) {
+        return;
+      }
+
       event.preventDefault();
       openItem(items()[activeIndex()]);
     }
@@ -152,23 +174,20 @@ export function CommandPalette(props: CommandPaletteProps) {
               ref={inputElement}
               value={query()}
               onInput={(event) => setQuery(event.currentTarget.value)}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
               autocomplete="off"
               spellcheck={false}
               placeholder="Search kanji, words, readings, English..."
             />
-            <span class="kbd">⌘K</span>
+            <Show when={showSpinner()} fallback={<span class="kbd">⌘K</span>}>
+              <span class="command-spinner" aria-label="Searching" />
+            </Show>
           </div>
 
           <div class="command-results" aria-live="polite">
             <Show when={query().trim() === ""}>
               <div class="command-empty">Type a query</div>
-            </Show>
-
-            <Show when={query().trim() !== "" && loading()}>
-              <div class="command-status">
-                <span class="command-pulse" />
-                <span>Searching local library</span>
-              </div>
             </Show>
 
             <Show when={query().trim() !== "" && error()}>

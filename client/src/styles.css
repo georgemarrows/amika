@@ -335,35 +335,19 @@ code,
   text-align: center;
 }
 
-.command-status {
-  display: flex;
-  min-height: 32px;
-  align-items: center;
-  gap: var(--gap-sm);
-  border-bottom: var(--border-width) solid var(--color-border);
-  padding: 7px 20px;
-  color: var(--color-dim);
-  font-size: 12px;
+.command-spinner {
+  width: 16px;
+  height: 16px;
+  margin-right: var(--gap-lg);
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: command-spinner 760ms linear infinite;
 }
 
-.command-pulse {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--radius-lg);
-  animation: command-pulse 900ms ease-in-out infinite;
-  background: var(--color-accent);
-}
-
-@keyframes command-pulse {
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: scale(0.75);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1);
+@keyframes command-spinner {
+  to {
+    transform: rotate(360deg);
   }
 }
 
