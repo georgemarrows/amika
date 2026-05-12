@@ -12,6 +12,7 @@ export {
   replaceKanjiReadings,
   listKanji,
   listWords,
+  searchLibrary,
   upsertKanji,
   upsertMediaAsset,
   upsertSourceDeck,

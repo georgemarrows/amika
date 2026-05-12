@@ -4,6 +4,7 @@ import { extname, join, normalize, resolve, sep } from "node:path";
 import { getHomePageData } from "../../shared/home-data.js";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail.js";
 import type { KanjiListResponse, WordListResponse } from "../../shared/library-list.js";
+import type { SearchResponse } from "../../shared/search.js";
 import type { WordDetailResponse } from "../../shared/word-detail.js";
 import {
   defaultDatabasePath,
@@ -15,6 +16,7 @@ import {
   listKanji,
   listWords,
   openDatabase,
+  searchLibrary,
   type Db,
   type KanjiRow,
   type MediaAssetRow,
@@ -173,6 +175,13 @@ function toWordListResponse(db: Db): WordListResponse {
   };
 }
 
+function toSearchResponse(db: Db, query: string): SearchResponse {
+  return {
+    query,
+    items: searchLibrary(db, query),
+  };
+}
+
 function mediaPathInRoot(media: MediaAssetRow, mediaRoot: string) {
   const root = resolve(mediaRoot);
   const filePath = resolve(media.storagePath);
@@ -306,6 +315,31 @@ async function serveWord(request: Request, id: string, options: CreateAppOptions
   }
 }
 
+async function serveSearch(request: Request, options: CreateAppOptions) {
+  if (!isAllowed(request, ["GET", "HEAD"])) {
+    return methodNotAllowed(["GET", "HEAD"]);
+  }
+
+  const query = new URL(request.url).searchParams.get("q") ?? "";
+  let handle: ReturnType<typeof openRequestDb>;
+
+  try {
+    handle = openRequestDb(options);
+  } catch {
+    return json({ error: "Search database unavailable" }, { status: 503 });
+  }
+
+  try {
+    return json(toSearchResponse(handle.db, query));
+  } catch {
+    return json({ error: "Search database unavailable" }, { status: 503 });
+  } finally {
+    if (handle.close) {
+      handle.db.close();
+    }
+  }
+}
+
 async function serveMedia(request: Request, id: string, options: CreateAppOptions) {
   if (!isAllowed(request, ["GET", "HEAD"])) {
     return methodNotAllowed(["GET", "HEAD"]);
@@ -355,6 +389,10 @@ async function serveMedia(request: Request, id: string, options: CreateAppOption
 export function createApp(options: CreateAppOptions = {}) {
   return async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === "/api/search") {
+      return serveSearch(request, options);
+    }
 
     if (url.pathname === "/api/kanji") {
       return serveKanjiList(request, options);

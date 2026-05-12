@@ -13,7 +13,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [x] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
 - [x] T-30049 Out of order: full review of existing codebase - see docs/review*.md
 - [ ] T-30050 At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
-- [ ] T-30100 Search
+- [x] T-30100 Search - see docs/30100-search for details
 - [ ] T-30200 Simple SRS implementation
 - [ ] T-30300 Import Anki status?
 - [ ] T-30400 Add example sentences. Following deleted non-words could go in examples

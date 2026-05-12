@@ -16,6 +16,7 @@ import {
   replaceKanjiReadings,
   replaceWordKanji,
   runMigrations,
+  searchLibrary,
   upsertKanji,
   upsertMediaAsset,
   upsertSourceDeck,
@@ -360,6 +361,190 @@ describe("kanji repository", () => {
           position: 0,
         },
       ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("searches exact kanji before matching word prefixes", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertKanji(db, {
+        literal: "勉",
+        primaryMeaning: "try hard",
+        strokeCount: null,
+        strokeOrderMediaId: null,
+        frequencyRank: null,
+        usefulness: null,
+        sourceRecordId: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+      upsertWord(db, {
+        id: "word-benkyou",
+        expression: "勉強",
+        reading: "べんきょう",
+        primaryMeaning: "study",
+        usefulness: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+
+      assert.deepEqual(searchLibrary(db, "勉"), [
+        {
+          type: "kanji",
+          id: "勉",
+          title: "勉",
+          subtitle: "try hard",
+          targetPaneKey: "kanji:勉",
+        },
+        {
+          type: "word",
+          id: "word-benkyou",
+          title: "勉強",
+          subtitle: "べんきょう · study",
+          targetPaneKey: "word:word-benkyou",
+        },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("searches exact words before longer word prefixes", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertWord(db, {
+        id: "word-benkyou",
+        expression: "勉強",
+        reading: "べんきょう",
+        primaryMeaning: "study",
+        usefulness: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+      upsertWord(db, {
+        id: "word-benkyou-suru",
+        expression: "勉強する",
+        reading: "べんきょうする",
+        primaryMeaning: "to study",
+        usefulness: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+
+      assert.deepEqual(searchLibrary(db, "勉強"), [
+        {
+          type: "word",
+          id: "word-benkyou",
+          title: "勉強",
+          subtitle: "べんきょう · study",
+          targetPaneKey: "word:word-benkyou",
+        },
+        {
+          type: "word",
+          id: "word-benkyou-suru",
+          title: "勉強する",
+          subtitle: "べんきょうする · to study",
+          targetPaneKey: "word:word-benkyou-suru",
+        },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("searches words by reading prefix", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertWord(db, {
+        id: "word-benkyou",
+        expression: "勉強",
+        reading: "べんきょう",
+        primaryMeaning: "study",
+        usefulness: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+
+      assert.deepEqual(searchLibrary(db, "べん"), [
+        {
+          type: "word",
+          id: "word-benkyou",
+          title: "勉強",
+          subtitle: "べんきょう · study",
+          targetPaneKey: "word:word-benkyou",
+        },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("searches words by English meaning", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertWord(db, {
+        id: "word-gakushuu",
+        expression: "学習",
+        reading: "がくしゅう",
+        primaryMeaning: "study; learning",
+        usefulness: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+
+      assert.deepEqual(searchLibrary(db, "study"), [
+        {
+          type: "word",
+          id: "word-gakushuu",
+          title: "学習",
+          subtitle: "がくしゅう · study; learning",
+          targetPaneKey: "word:word-gakushuu",
+        },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("deduplicates search results across matching tiers", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertWord(db, {
+        id: "word-study-reading",
+        expression: "学ぶ",
+        reading: "study",
+        primaryMeaning: "study",
+        usefulness: null,
+        now: "2026-05-12T00:00:00.000Z",
+      });
+
+      assert.deepEqual(searchLibrary(db, "study"), [
+        {
+          type: "word",
+          id: "word-study-reading",
+          title: "学ぶ",
+          subtitle: "study · study",
+          targetPaneKey: "word:word-study-reading",
+        },
+      ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("returns no search results for empty queries", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+
+      assert.deepEqual(searchLibrary(db, "  "), []);
     } finally {
       db.close();
     }

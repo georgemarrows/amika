@@ -1,4 +1,5 @@
 import type { KanjiReading, KanjiReadingType } from "../../../shared/kanji-reading.js";
+import type { SearchResultItem } from "../../../shared/search.js";
 import type { Db } from "./connection.js";
 
 export type SourceDeckInput = {
@@ -148,6 +149,13 @@ export type WordDetailRow = {
   kanji: WordKanjiRow[];
 };
 
+type SearchWordRow = {
+  id: string;
+  expression: string;
+  reading: string | null;
+  primary_meaning: string | null;
+};
+
 type KanjiQueryRow = {
   literal: string;
   primary_meaning: string;
@@ -166,6 +174,45 @@ type KanjiQueryRow = {
   media_file_hash: string | null;
   media_storage_path: string | null;
 };
+
+function wordSubtitle(word: SearchWordRow) {
+  return [word.reading, word.primary_meaning].filter(Boolean).join(" · ");
+}
+
+function toWordSearchResult(word: SearchWordRow): SearchResultItem {
+  return {
+    type: "word",
+    id: word.id,
+    title: word.expression,
+    subtitle: wordSubtitle(word),
+    targetPaneKey: `word:${word.id}`,
+  };
+}
+
+function escapeLike(value: string) {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+function appendSearchResults(
+  items: SearchResultItem[],
+  seen: Set<string>,
+  candidates: SearchResultItem[],
+) {
+  for (const item of candidates) {
+    const key = `${item.type}:${item.id}`;
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    items.push(item);
+
+    if (items.length >= 30) {
+      return;
+    }
+  }
+}
 
 export function upsertSourceDeck(db: Db, input: SourceDeckInput) {
   db.prepare(`
@@ -475,6 +522,100 @@ export function listKanji(db: Db, limit: number): KanjiListRow[] {
         usefulness: kanji.usefulness,
       };
     });
+}
+
+export function searchLibrary(db: Db, rawQuery: string): SearchResultItem[] {
+  const query = rawQuery.trim();
+
+  if (query === "") {
+    return [];
+  }
+
+  const escapedQuery = escapeLike(query);
+  const items: SearchResultItem[] = [];
+  const seen = new Set<string>();
+
+  const exactKanji = db
+    .prepare(
+      `
+      select literal, primary_meaning
+      from kanji
+      where literal = ?
+      limit 10
+      `,
+    )
+    .all(query)
+    .map((row) => {
+      const kanji = row as { literal: string; primary_meaning: string };
+
+      return {
+        type: "kanji",
+        id: kanji.literal,
+        title: kanji.literal,
+        subtitle: kanji.primary_meaning,
+        targetPaneKey: `kanji:${kanji.literal}`,
+      } satisfies SearchResultItem;
+    });
+  appendSearchResults(items, seen, exactKanji);
+
+  const exactWords = db
+    .prepare(
+      `
+      select id, expression, reading, primary_meaning
+      from words
+      where expression = ?
+      order by expression, reading
+      limit 10
+      `,
+    )
+    .all(query)
+    .map((row) => toWordSearchResult(row as SearchWordRow));
+  appendSearchResults(items, seen, exactWords);
+
+  const expressionPrefixWords = db
+    .prepare(
+      `
+      select id, expression, reading, primary_meaning
+      from words
+      where expression like ? escape '\\'
+        and expression <> ?
+      order by length(expression), expression
+      limit 10
+      `,
+    )
+    .all(`${escapedQuery}%`, query)
+    .map((row) => toWordSearchResult(row as SearchWordRow));
+  appendSearchResults(items, seen, expressionPrefixWords);
+
+  const readingPrefixWords = db
+    .prepare(
+      `
+      select id, expression, reading, primary_meaning
+      from words
+      where reading like ? escape '\\'
+      order by expression
+      limit 10
+      `,
+    )
+    .all(`${escapedQuery}%`)
+    .map((row) => toWordSearchResult(row as SearchWordRow));
+  appendSearchResults(items, seen, readingPrefixWords);
+
+  const englishMeaningWords = db
+    .prepare(
+      `
+      select id, expression, reading, primary_meaning
+      from words
+      where primary_meaning like ? escape '\\'
+      order by expression
+      limit 10
+      `,
+    )
+    .all(`%${escapedQuery}%`)
+    .map((row) => toWordSearchResult(row as SearchWordRow));
+  appendSearchResults(items, seen, englishMeaningWords);
+
+  return items;
 }
 
 export function getKanjiReadings(db: Db, literal: string): KanjiReadingRow[] {

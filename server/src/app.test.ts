@@ -101,6 +101,28 @@ function seedWordDetail(db: Db) {
   ]);
 }
 
+function seedSearchData(db: Db) {
+  runMigrations(db);
+  upsertKanji(db, {
+    literal: "勉",
+    primaryMeaning: "try hard",
+    strokeCount: null,
+    strokeOrderMediaId: null,
+    frequencyRank: null,
+    usefulness: null,
+    sourceRecordId: null,
+    now: "2026-05-12T00:00:00.000Z",
+  });
+  upsertWord(db, {
+    id: "word-benkyou",
+    expression: "勉強",
+    reading: "べんきょう",
+    primaryMeaning: "study",
+    usefulness: null,
+    now: "2026-05-12T00:00:00.000Z",
+  });
+}
+
 describe("server app", () => {
   test("reports health", async () => {
     const app = createApp();
@@ -194,6 +216,57 @@ describe("server app", () => {
     } finally {
       db.close();
       rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns ranked search results", async () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedSearchData(db);
+      const app = createApp({ db });
+      const response = await app(new Request("http://localhost/api/search?q=%E5%8B%89"));
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), {
+        query: "勉",
+        items: [
+          {
+            type: "kanji",
+            id: "勉",
+            title: "勉",
+            subtitle: "try hard",
+            targetPaneKey: "kanji:勉",
+          },
+          {
+            type: "word",
+            id: "word-benkyou",
+            title: "勉強",
+            subtitle: "べんきょう · study",
+            targetPaneKey: "word:word-benkyou",
+          },
+        ],
+      });
+    } finally {
+      db.close();
+    }
+  });
+
+  test("returns no search results for missing or empty queries", async () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      const app = createApp({ db });
+      const missingResponse = await app(new Request("http://localhost/api/search"));
+      const emptyResponse = await app(new Request("http://localhost/api/search?q=%20%20"));
+
+      assert.equal(missingResponse.status, 200);
+      assert.deepEqual(await missingResponse.json(), { query: "", items: [] });
+      assert.equal(emptyResponse.status, 200);
+      assert.deepEqual(await emptyResponse.json(), { query: "  ", items: [] });
+    } finally {
+      db.close();
     }
   });
 
@@ -312,6 +385,7 @@ describe("server app", () => {
       const kanjiResponse = await app(new Request("http://localhost/api/kanji/%E5%85%B7", { method: "POST" }));
       const wordResponse = await app(new Request("http://localhost/api/words/word-dogu", { method: "POST" }));
       const mediaResponse = await app(new Request("http://localhost/api/media/media", { method: "POST" }));
+      const searchResponse = await app(new Request("http://localhost/api/search?q=%E5%8B%89", { method: "POST" }));
 
       assert.equal(kanjiResponse.status, 405);
       assert.equal(kanjiResponse.headers.get("allow"), "GET, HEAD");
@@ -319,6 +393,8 @@ describe("server app", () => {
       assert.equal(wordResponse.headers.get("allow"), "GET, HEAD");
       assert.equal(mediaResponse.status, 405);
       assert.equal(mediaResponse.headers.get("allow"), "GET, HEAD");
+      assert.equal(searchResponse.status, 405);
+      assert.equal(searchResponse.headers.get("allow"), "GET, HEAD");
     } finally {
       db.close();
     }

@@ -1,6 +1,7 @@
 import type { HomePageData } from "../../shared/home-data";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail";
 import type { KanjiListResponse, WordListResponse } from "../../shared/library-list";
+import type { SearchResponse } from "../../shared/search";
 import type { WordDetailResponse } from "../../shared/word-detail";
 
 export async function fetchHomePageData(): Promise<HomePageData> {
@@ -48,6 +49,16 @@ export async function fetchWordDetail(id: string): Promise<WordDetailResponse> {
 
   if (!response.ok) {
     throw new Error(`Failed to load word detail: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchSearchResults(query: string, signal?: AbortSignal): Promise<SearchResponse> {
+  const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load search results: ${response.status}`);
   }
 
   return response.json();

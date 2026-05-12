@@ -1,25 +1,43 @@
 import { For, createEffect, onCleanup, onMount } from "solid-js";
+import { createSignal } from "solid-js";
 
 import type { HomePageData } from "../../../shared/home-data";
+import type { SearchTargetPaneKey } from "../../../shared/search";
 import { runClassAnimationAfterEvent } from "../dom/class-animation";
 import { createPaneState, describePane } from "../state/pane-state";
+import { CommandPalette } from "./CommandPalette";
 import { PaneBody } from "./PaneBody";
 
 export function PaneShell(props: { state: HomePageData }) {
   let panesElement: HTMLDivElement | undefined;
   let handledScrollRequestId = -1;
   const paneState = createPaneState();
+  const [searchOpen, setSearchOpen] = createSignal(false);
 
   onMount(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
+    const onGlobalKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (event.key === "Escape") {
         paneState.closeRightmost();
       }
     };
 
-    window.addEventListener("keydown", closeOnEscape);
-    onCleanup(() => window.removeEventListener("keydown", closeOnEscape));
+    window.addEventListener("keydown", onGlobalKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", onGlobalKeyDown));
   });
+
+  const openSearchResult = (key: SearchTargetPaneKey) => {
+    paneState.openFromRoot(key);
+  };
 
   createEffect(() => {
     const panes = paneState.panes();
@@ -63,7 +81,7 @@ export function PaneShell(props: { state: HomePageData }) {
             <span>Review</span>
             <span class="badge">{props.state.review.dueCount}</span>
           </button>
-          <button class="nav-item nav-item-dim" type="button">
+          <button class="nav-item nav-item-dim" type="button" onClick={() => setSearchOpen(true)}>
             Search <span class="kbd">⌘K</span>
           </button>
           <div class="nav-section">Library</div>
@@ -111,6 +129,8 @@ export function PaneShell(props: { state: HomePageData }) {
           }}
         </For>
       </main>
+
+      <CommandPalette open={searchOpen()} onClose={() => setSearchOpen(false)} onOpenResult={openSearchResult} />
     </div>
   );
 }
