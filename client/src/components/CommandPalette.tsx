@@ -49,6 +49,15 @@ export function CommandPalette(props: CommandPaletteProps) {
     const controller = new AbortController();
     let spinnerTimeoutId: number | undefined;
 
+    const clearSpinnerTimer = () => {
+      if (spinnerTimeoutId === undefined) {
+        return;
+      }
+
+      window.clearTimeout(spinnerTimeoutId);
+      spinnerTimeoutId = undefined;
+    };
+
     setStatus("debouncing");
 
     const timeoutId = window.setTimeout(() => {
@@ -62,6 +71,7 @@ export function CommandPalette(props: CommandPaletteProps) {
 
       void fetchSearchResults(currentQuery, controller.signal)
         .then((response) => {
+          clearSpinnerTimer();
           setItems(response.items);
           setActiveIndex(0);
           setStatus(response.items.length === 0 ? "empty" : "ready");
@@ -71,6 +81,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             return;
           }
 
+          clearSpinnerTimer();
           setItems([]);
           setActiveIndex(0);
           setStatus("error");
@@ -79,9 +90,7 @@ export function CommandPalette(props: CommandPaletteProps) {
 
     onCleanup(() => {
       window.clearTimeout(timeoutId);
-      if (spinnerTimeoutId !== undefined) {
-        window.clearTimeout(spinnerTimeoutId);
-      }
+      clearSpinnerTimer();
       controller.abort();
     });
   });
