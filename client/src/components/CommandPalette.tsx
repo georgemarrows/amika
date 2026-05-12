@@ -1,4 +1,4 @@
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js";
+import { For, Show, createEffect, createSignal, onCleanup, type Accessor } from "solid-js";
 
 import type { SearchResultItem, SearchTargetPaneKey } from "../../../shared/search";
 import { fetchSearchResults } from "../api";
@@ -11,8 +11,13 @@ type CommandPaletteProps = {
 
 type SearchStatus = "idle" | "debouncing" | "loading-quiet" | "loading-visible" | "ready" | "empty" | "error";
 
-export function CommandPalette(props: CommandPaletteProps) {
-  let inputElement: HTMLInputElement | undefined;
+type CommandPaletteStateProps = {
+  open: Accessor<boolean>;
+  onClose: () => void;
+  onOpenResult: (key: SearchTargetPaneKey) => void;
+};
+
+function createCommandPaletteState(props: CommandPaletteStateProps) {
   const [query, setQuery] = createSignal("");
   const [items, setItems] = createSignal<SearchResultItem[]>([]);
   const [activeIndex, setActiveIndex] = createSignal(0);
@@ -20,15 +25,7 @@ export function CommandPalette(props: CommandPaletteProps) {
   const [isComposing, setIsComposing] = createSignal(false);
 
   createEffect(() => {
-    if (!props.open) {
-      return;
-    }
-
-    queueMicrotask(() => inputElement?.focus());
-  });
-
-  createEffect(() => {
-    if (!props.open) {
+    if (!props.open()) {
       setQuery("");
       setItems([]);
       setActiveIndex(0);
@@ -99,7 +96,7 @@ export function CommandPalette(props: CommandPaletteProps) {
     props.onClose();
   };
 
-  const openItem = (item: SearchResultItem | undefined) => {
+  const activateItem = (item: SearchResultItem | undefined) => {
     if (!item) {
       return;
     }
@@ -108,7 +105,7 @@ export function CommandPalette(props: CommandPaletteProps) {
     close();
   };
 
-  const moveActive = (delta: number) => {
+  const moveSelection = (delta: number) => {
     const currentItems = items();
 
     if (currentItems.length === 0) {
@@ -118,7 +115,11 @@ export function CommandPalette(props: CommandPaletteProps) {
     setActiveIndex((current) => (current + delta + currentItems.length) % currentItems.length);
   };
 
-  const onKeyDown = (event: KeyboardEvent) => {
+  const activateSelection = () => {
+    activateItem(items()[activeIndex()]);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -128,13 +129,13 @@ export function CommandPalette(props: CommandPaletteProps) {
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      moveActive(1);
+      moveSelection(1);
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      moveActive(-1);
+      moveSelection(-1);
       return;
     }
 
@@ -144,12 +145,44 @@ export function CommandPalette(props: CommandPaletteProps) {
       }
 
       event.preventDefault();
-      openItem(items()[activeIndex()]);
+      activateSelection();
     }
   };
 
+  return {
+    query,
+    items,
+    activeIndex,
+    showSpinner: () => status() === "loading-visible",
+    showIdleMessage: () => status() === "idle",
+    showEmptyMessage: () => status() === "empty",
+    showErrorMessage: () => status() === "error",
+    updateQuery: setQuery,
+    startComposition: () => setIsComposing(true),
+    endComposition: () => setIsComposing(false),
+    pointAtItem: setActiveIndex,
+    activateItem,
+    handleKeyDown,
+  };
+}
+
+export function CommandPalette(props: CommandPaletteProps) {
+  let inputElement: HTMLInputElement | undefined;
+  const palette = createCommandPaletteState({
+    open: () => props.open,
+    onClose: props.onClose,
+    onOpenResult: props.onOpenResult,
+  });
+
+  createEffect(() => {
+    if (!props.open) {
+      return;
+    }
+
+    queueMicrotask(() => inputElement?.focus());
+  });
+
   const subtitle = (item: SearchResultItem) => (item.subtitle === "" ? "No meaning imported yet" : item.subtitle);
-  const showSpinner = () => status() === "loading-visible";
 
   return (
     <Show when={props.open}>
@@ -160,7 +193,7 @@ export function CommandPalette(props: CommandPaletteProps) {
             close();
           }
         }}
-        onKeyDown={onKeyDown}
+        onKeyDown={palette.handleKeyDown}
       >
         <section class="command-palette" aria-label="Search">
           <div class="command-search-row">
@@ -172,39 +205,39 @@ export function CommandPalette(props: CommandPaletteProps) {
             </div>
             <input
               ref={inputElement}
-              value={query()}
-              onInput={(event) => setQuery(event.currentTarget.value)}
-              onCompositionStart={() => setIsComposing(true)}
-              onCompositionEnd={() => setIsComposing(false)}
+              value={palette.query()}
+              onInput={(event) => palette.updateQuery(event.currentTarget.value)}
+              onCompositionStart={palette.startComposition}
+              onCompositionEnd={palette.endComposition}
               autocomplete="off"
               spellcheck={false}
               placeholder="Search kanji, words, readings, English..."
             />
-            <Show when={showSpinner()} fallback={<span class="kbd">⌘K</span>}>
+            <Show when={palette.showSpinner()} fallback={<span class="kbd">⌘K</span>}>
               <span class="command-spinner" aria-label="Searching" />
             </Show>
           </div>
 
           <div class="command-results" aria-live="polite">
-            <Show when={status() === "idle"}>
+            <Show when={palette.showIdleMessage()}>
               <div class="command-empty">Type a query</div>
             </Show>
 
-            <Show when={status() === "error"}>
+            <Show when={palette.showErrorMessage()}>
               <div class="command-empty">Search failed</div>
             </Show>
 
-            <Show when={status() === "empty"}>
+            <Show when={palette.showEmptyMessage()}>
               <div class="command-empty">No results</div>
             </Show>
 
-            <For each={items()}>
+            <For each={palette.items()}>
               {(item, index) => (
                 <button
-                  class={`command-result ${index() === activeIndex() ? "active" : ""}`}
+                  class={`command-result ${index() === palette.activeIndex() ? "active" : ""}`}
                   type="button"
-                  onMouseEnter={() => setActiveIndex(index())}
-                  onClick={() => openItem(item)}
+                  onMouseEnter={() => palette.pointAtItem(index())}
+                  onClick={() => palette.activateItem(item)}
                 >
                   <span class={`command-glyph ${item.type} jp`}>{item.type === "kanji" ? item.title : item.title.slice(0, 2)}</span>
                   <span class="command-main">
