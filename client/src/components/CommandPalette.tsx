@@ -183,6 +183,20 @@ export function CommandPalette(props: CommandPaletteProps) {
   });
 
   const subtitle = (item: SearchResultItem) => (item.subtitle === "" ? "No meaning imported yet" : item.subtitle);
+  const reading = (item: SearchResultItem) => {
+    if (item.type !== "word" || item.subtitle === "") {
+      return null;
+    }
+
+    return item.subtitle.split(" · ")[0] ?? null;
+  };
+  const meaning = (item: SearchResultItem) => {
+    if (item.type !== "word") {
+      return subtitle(item);
+    }
+
+    return item.subtitle.includes(" · ") ? item.subtitle.split(" · ").slice(1).join(" · ") : subtitle(item);
+  };
 
   return (
     <Show when={props.open}>
@@ -190,7 +204,7 @@ export function CommandPalette(props: CommandPaletteProps) {
         class="command-palette-backdrop"
         onClick={(event) => {
           if (event.currentTarget === event.target) {
-            close();
+            props.onClose();
           }
         }}
         onKeyDown={palette.handleKeyDown}
@@ -234,15 +248,19 @@ export function CommandPalette(props: CommandPaletteProps) {
             <For each={palette.items()}>
               {(item, index) => (
                 <button
-                  class={`command-result ${index() === palette.activeIndex() ? "active" : ""}`}
+                  class={`command-result ${item.type} ${index() === palette.activeIndex() ? "active" : ""}`}
                   type="button"
                   onMouseEnter={() => palette.pointAtItem(index())}
                   onClick={() => palette.activateItem(item)}
                 >
-                  <span class={`command-glyph ${item.type} jp`}>{item.type === "kanji" ? item.title : item.title.slice(0, 2)}</span>
                   <span class="command-main">
-                    <span class="command-title jp">{item.title}</span>
-                    <span class="command-subtitle">{subtitle(item)}</span>
+                    <span class="command-title-line jp">
+                      <span class={`command-title ${item.type}`}>{item.title}</span>
+                      <Show when={reading(item)}>
+                        {(wordReading) => <span class="command-reading jp">{wordReading()}</span>}
+                      </Show>
+                    </span>
+                    <span class="command-subtitle">{meaning(item)}</span>
                   </span>
                   <span class="command-type">{item.type}</span>
                 </button>

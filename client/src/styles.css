@@ -354,44 +354,31 @@ code,
 .command-result {
   display: grid;
   width: 100%;
-  grid-template-columns: 46px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--gap-lg);
   border: 0;
-  border-left: 2px solid transparent;
+  border-left: 3px solid transparent;
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
-  padding: 9px 20px;
+  padding: 10px 20px;
   text-align: left;
 }
 
 .command-result:hover,
 .command-result.active {
-  border-left-color: var(--color-accent);
   background: var(--color-bg-hover);
 }
 
-.command-glyph {
-  display: grid;
-  width: 40px;
-  min-height: 40px;
-  place-items: center;
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 22px;
-  line-height: 1;
+.command-result.kanji.active,
+.command-result.kanji:hover {
+  border-left-color: var(--color-search-kanji);
 }
 
-.command-glyph.word {
-  color: var(--color-search-word);
-  font-size: 17px;
-}
-
-.command-glyph.kanji {
-  color: var(--color-search-kanji);
+.command-result.word.active,
+.command-result.word:hover {
+  border-left-color: var(--color-search-word);
 }
 
 .command-main {
@@ -400,15 +387,44 @@ code,
   gap: 1px;
 }
 
-.command-title,
+.command-title-line,
 .command-subtitle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.command-title-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-md);
+}
+
 .command-title {
-  font-weight: 650;
+  overflow: hidden;
+  flex-shrink: 1;
+  font-size: 18px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-title.kanji {
+  color: var(--color-search-kanji);
+  font-size: 24px;
+}
+
+.command-title.word {
+  color: var(--color-search-word);
+}
+
+.command-reading {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 450;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .command-subtitle {
@@ -430,7 +446,7 @@ code,
   }
 
   .command-result {
-    grid-template-columns: 42px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .command-type,
