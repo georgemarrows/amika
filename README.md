@@ -1,6 +1,23 @@
 # Amika
 
-Minimal `T-1000` scaffold:
+A personal Japanese dictionary and study tool.
+
+## Project Docs
+
+- [Tasks and roadmap](./docs/tasks.md)
+- [Requirements](./docs/requirements.md)
+- [Design spec](./docs/spec.md)
+- [Dependency rationale](./docs/dependencies.md)
+- [Architecture decision records](./docs/adrs)
+
+## Browser
+
+For local development, open [http://127.0.0.1:5173](http://127.0.0.1:5173) after `bun run dev`.
+
+For the production-style build, run `bun run build`, then `bun run start`, then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
+
+
+## Implementation
 
 - Solid + TypeScript client in [`client`](./client)
 - Small TypeScript HTTP server in [`server`](./server)
@@ -105,16 +122,3 @@ The repair command only targets importer-shaped word IDs whose expressions are K
 
 The DB/import scripts and local HTTP server run through Node because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.
 
-## Project Docs
-
-- [Tasks and roadmap](./docs/tasks.md)
-- [Requirements](./docs/requirements.md)
-- [Design spec](./docs/spec.md)
-- [Dependency rationale](./docs/dependencies.md)
-- [Architecture decision records](./docs/adrs)
-
-## Browser
-
-For local development, open [http://127.0.0.1:5173](http://127.0.0.1:5173) after `bun run dev`.
-
-For the production-style build, run `bun run build`, then `bun run start`, then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
