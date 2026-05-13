@@ -7,6 +7,7 @@ This lists direct project dependencies and why they are present. Keep entries to
 - `better-sqlite3`: Node SQLite driver for local persistent storage.
 - `jszip`: Reads APKG files as zip archives for dictionary import.
 - `solid-js`: Client UI framework for the pane-based Japanese learning workspace.
+- `hono`: Lightweight TypeScript HTTP server framework for the API backend.
 
 ## Development
 

@@ -15,6 +15,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [ ] T-30050 At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
 - [x] T-30100 Search - see docs/30100-search for details
 - [ ] T-30200 Simple SRS implementation
+- [ ] T-30250 Backups
 - [ ] T-30300 Import Anki status?
 - [ ] T-30400 Add example sentences. Following deleted non-words could go in examples
 ```json

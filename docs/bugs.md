@@ -12,5 +12,5 @@ UI
 
 Code review
 - [ ] clean up repetitiion in api.ts
-- [ ] clean up branching in app.ts createApp. Should we be using a lightweight router? Nest.js??
+- [x] clean up branching in app.ts createApp. Should we be using a lightweight router? Nest.js??
 - [ ] refactor repositories.ts searchLibrary to have less duplication.

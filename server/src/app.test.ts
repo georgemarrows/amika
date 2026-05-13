@@ -377,16 +377,23 @@ describe("server app", () => {
     }
   });
 
-  test("rejects unsupported kanji and media methods", async () => {
+  test("rejects unsupported methods on known GET API routes", async () => {
     const db = openDatabase({ path: ":memory:" });
     const app = createApp({ db });
 
     try {
+      const healthResponse = await app(new Request("http://localhost/api/health", { method: "POST" }));
+      const homeResponse = await app(new Request("http://localhost/api/home", { method: "POST" }));
       const kanjiResponse = await app(new Request("http://localhost/api/kanji/%E5%85%B7", { method: "POST" }));
       const wordResponse = await app(new Request("http://localhost/api/words/word-dogu", { method: "POST" }));
       const mediaResponse = await app(new Request("http://localhost/api/media/media", { method: "POST" }));
       const searchResponse = await app(new Request("http://localhost/api/search?q=%E5%8B%89", { method: "POST" }));
 
+      assert.equal(healthResponse.status, 405);
+      assert.equal(healthResponse.headers.get("allow"), "GET, HEAD");
+      assert.equal(await healthResponse.text(), "Method not allowed");
+      assert.equal(homeResponse.status, 405);
+      assert.equal(homeResponse.headers.get("allow"), "GET, HEAD");
       assert.equal(kanjiResponse.status, 405);
       assert.equal(kanjiResponse.headers.get("allow"), "GET, HEAD");
       assert.equal(wordResponse.status, 405);
@@ -398,5 +405,24 @@ describe("server app", () => {
     } finally {
       db.close();
     }
+  });
+
+  test("returns JSON not found for unknown API routes on any method", async () => {
+    const app = createApp();
+    const getResponse = await app(new Request("http://localhost/api/missing"));
+    const postResponse = await app(new Request("http://localhost/api/missing", { method: "POST" }));
+
+    assert.equal(getResponse.status, 404);
+    assert.deepEqual(await getResponse.json(), { error: "Not found" });
+    assert.equal(postResponse.status, 404);
+    assert.deepEqual(await postResponse.json(), { error: "Not found" });
+  });
+
+  test("does not match nested paths as dynamic API ids", async () => {
+    const app = createApp();
+    const response = await app(new Request("http://localhost/api/words/a/b"));
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "Not found" });
   });
 });

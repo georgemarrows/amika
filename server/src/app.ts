@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize, resolve, sep } from "node:path";
 
+import { Hono, type Handler } from "hono";
+
 import { getHomePageData } from "../../shared/home-data.js";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail.js";
 import type { KanjiListResponse, WordListResponse } from "../../shared/library-list.js";
@@ -26,6 +28,7 @@ import {
 const clientDistDir = join(process.cwd(), "dist", "client");
 const defaultMediaRoot = join(process.cwd(), ".var", "media");
 const libraryListLimit = 50;
+const getAndHeadMethods = ["GET", "HEAD"];
 
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
@@ -55,30 +58,22 @@ function json(data: unknown, init?: ResponseInit) {
   });
 }
 
-function methodNotAllowed(allowed: string[]) {
+function methodNotAllowed() {
   return new Response("Method not allowed", {
     status: 405,
     headers: {
-      allow: allowed.join(", "),
+      allow: getAndHeadMethods.join(", "),
       "content-type": "text/plain; charset=utf-8",
     },
   });
 }
 
-function isAllowed(request: Request, allowed: string[]) {
-  return allowed.includes(request.method);
-}
-
-function decodePathSegment(segment: string) {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return null;
-  }
+function isGetOrHead(request: Request) {
+  return getAndHeadMethods.includes(request.method);
 }
 
 function isNavigationRequest(request: Request, pathname: string) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
+  if (!isGetOrHead(request)) {
     return false;
   }
 
@@ -115,6 +110,30 @@ function openRequestDb(options: CreateAppOptions) {
     }),
     close: true,
   };
+}
+
+async function withRequestDb(
+  options: CreateAppOptions,
+  unavailableError: string,
+  handler: (db: Db) => Response | Promise<Response>,
+) {
+  let handle: ReturnType<typeof openRequestDb>;
+
+  try {
+    handle = openRequestDb(options);
+  } catch {
+    return json({ error: unavailableError }, { status: 503 });
+  }
+
+  try {
+    return await handler(handle.db);
+  } catch {
+    return json({ error: unavailableError }, { status: 503 });
+  } finally {
+    if (handle.close) {
+      handle.db.close();
+    }
+  }
 }
 
 function mediaUrl(media: MediaAssetRow) {
@@ -193,168 +212,45 @@ function mediaPathInRoot(media: MediaAssetRow, mediaRoot: string) {
   return filePath;
 }
 
-function routeSegment(pathname: string, prefix: string) {
-  if (!pathname.startsWith(prefix)) {
-    return null;
-  }
-
-  const segment = pathname.slice(prefix.length);
-
-  if (segment === "" || segment.includes("/")) {
-    return null;
-  }
-
-  return decodePathSegment(segment);
-}
-
-async function serveKanji(request: Request, literal: string, options: CreateAppOptions) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
-    return methodNotAllowed(["GET", "HEAD"]);
-  }
-
-  let handle: ReturnType<typeof openRequestDb>;
-
-  try {
-    handle = openRequestDb(options);
-  } catch {
-    return json({ error: "Kanji database unavailable" }, { status: 503 });
-  }
-
-  try {
-    const kanji = getKanjiByLiteral(handle.db, literal);
+async function serveKanji(literal: string, options: CreateAppOptions) {
+  return withRequestDb(options, "Kanji database unavailable", (db) => {
+    const kanji = getKanjiByLiteral(db, literal);
 
     if (!kanji) {
       return json({ error: "Kanji not found" }, { status: 404 });
     }
 
-    return json(toKanjiDetailResponse(handle.db, kanji));
-  } catch {
-    return json({ error: "Kanji database unavailable" }, { status: 503 });
-  } finally {
-    if (handle.close) {
-      handle.db.close();
-    }
-  }
+    return json(toKanjiDetailResponse(db, kanji));
+  });
 }
 
-async function serveKanjiList(request: Request, options: CreateAppOptions) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
-    return methodNotAllowed(["GET", "HEAD"]);
-  }
-
-  let handle: ReturnType<typeof openRequestDb>;
-
-  try {
-    handle = openRequestDb(options);
-  } catch {
-    return json({ error: "Kanji database unavailable" }, { status: 503 });
-  }
-
-  try {
-    return json(toKanjiListResponse(handle.db));
-  } catch {
-    return json({ error: "Kanji database unavailable" }, { status: 503 });
-  } finally {
-    if (handle.close) {
-      handle.db.close();
-    }
-  }
+async function serveKanjiList(options: CreateAppOptions) {
+  return withRequestDb(options, "Kanji database unavailable", (db) => json(toKanjiListResponse(db)));
 }
 
-async function serveWordList(request: Request, options: CreateAppOptions) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
-    return methodNotAllowed(["GET", "HEAD"]);
-  }
-
-  let handle: ReturnType<typeof openRequestDb>;
-
-  try {
-    handle = openRequestDb(options);
-  } catch {
-    return json({ error: "Word database unavailable" }, { status: 503 });
-  }
-
-  try {
-    return json(toWordListResponse(handle.db));
-  } catch {
-    return json({ error: "Word database unavailable" }, { status: 503 });
-  } finally {
-    if (handle.close) {
-      handle.db.close();
-    }
-  }
+async function serveWordList(options: CreateAppOptions) {
+  return withRequestDb(options, "Word database unavailable", (db) => json(toWordListResponse(db)));
 }
 
-async function serveWord(request: Request, id: string, options: CreateAppOptions) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
-    return methodNotAllowed(["GET", "HEAD"]);
-  }
-
-  let handle: ReturnType<typeof openRequestDb>;
-
-  try {
-    handle = openRequestDb(options);
-  } catch {
-    return json({ error: "Word database unavailable" }, { status: 503 });
-  }
-
-  try {
-    const word = getWordById(handle.db, id);
+async function serveWord(id: string, options: CreateAppOptions) {
+  return withRequestDb(options, "Word database unavailable", (db) => {
+    const word = getWordById(db, id);
 
     if (!word) {
       return json({ error: "Word not found" }, { status: 404 });
     }
 
     return json(toWordDetailResponse(word));
-  } catch {
-    return json({ error: "Word database unavailable" }, { status: 503 });
-  } finally {
-    if (handle.close) {
-      handle.db.close();
-    }
-  }
+  });
 }
 
-async function serveSearch(request: Request, options: CreateAppOptions) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
-    return methodNotAllowed(["GET", "HEAD"]);
-  }
-
-  const query = new URL(request.url).searchParams.get("q") ?? "";
-  let handle: ReturnType<typeof openRequestDb>;
-
-  try {
-    handle = openRequestDb(options);
-  } catch {
-    return json({ error: "Search database unavailable" }, { status: 503 });
-  }
-
-  try {
-    return json(toSearchResponse(handle.db, query));
-  } catch {
-    return json({ error: "Search database unavailable" }, { status: 503 });
-  } finally {
-    if (handle.close) {
-      handle.db.close();
-    }
-  }
+async function serveSearch(query: string, options: CreateAppOptions) {
+  return withRequestDb(options, "Search database unavailable", (db) => json(toSearchResponse(db, query)));
 }
 
-async function serveMedia(request: Request, id: string, options: CreateAppOptions) {
-  if (!isAllowed(request, ["GET", "HEAD"])) {
-    return methodNotAllowed(["GET", "HEAD"]);
-  }
-
-  let handle: ReturnType<typeof openRequestDb>;
-
-  try {
-    handle = openRequestDb(options);
-  } catch {
-    return json({ error: "Media database unavailable" }, { status: 503 });
-  }
-
-  try {
-    const media = getMediaAssetById(handle.db, id);
+async function serveMedia(id: string, options: CreateAppOptions) {
+  return withRequestDb(options, "Media database unavailable", async (db) => {
+    const media = getMediaAssetById(db, id);
 
     if (!media) {
       return json({ error: "Media not found" }, { status: 404 });
@@ -377,90 +273,52 @@ async function serveMedia(request: Request, id: string, options: CreateAppOption
     } catch {
       return json({ error: "Media not found" }, { status: 404 });
     }
+  });
+}
+
+async function serveStaticRequest(request: Request, pathname: string) {
+  try {
+    return await serveStaticAsset(pathname);
   } catch {
-    return json({ error: "Media database unavailable" }, { status: 503 });
-  } finally {
-    if (handle.close) {
-      handle.db.close();
+    if (!isNavigationRequest(request, pathname)) {
+      return new Response("Not found", {
+        status: 404,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
+    }
+
+    try {
+      return await serveStaticAsset("/index.html");
+    } catch {
+      return new Response("Client build not found. Run `bun run build` first.", {
+        status: 503,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      });
     }
   }
 }
 
+function registerGet(app: Hono, path: string, handler: Handler) {
+  app.get(path, handler);
+  app.all(path, () => methodNotAllowed());
+}
+
 export function createApp(options: CreateAppOptions = {}) {
+  const app = new Hono();
+
+  registerGet(app, "/api/search", (context) => serveSearch(context.req.query("q") ?? "", options));
+  registerGet(app, "/api/kanji", () => serveKanjiList(options));
+  registerGet(app, "/api/kanji/:literal", (context) => serveKanji(context.req.param("literal") ?? "", options));
+  registerGet(app, "/api/words", () => serveWordList(options));
+  registerGet(app, "/api/words/:id", (context) => serveWord(context.req.param("id") ?? "", options));
+  registerGet(app, "/api/media/:id", (context) => serveMedia(context.req.param("id") ?? "", options));
+  registerGet(app, "/api/health", () => json({ ok: true }));
+  registerGet(app, "/api/home", () => json(getHomePageData()));
+
+  app.all("/api/*", () => json({ error: "Not found" }, { status: 404 }));
+  registerGet(app, "*", (context) => serveStaticRequest(context.req.raw, context.req.path));
+
   return async function handle(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-
-    if (url.pathname === "/api/search") {
-      return serveSearch(request, options);
-    }
-
-    if (url.pathname === "/api/kanji") {
-      return serveKanjiList(request, options);
-    }
-
-    const kanjiLiteral = routeSegment(url.pathname, "/api/kanji/");
-
-    if (kanjiLiteral !== null) {
-      return serveKanji(request, kanjiLiteral, options);
-    }
-
-    if (url.pathname === "/api/words") {
-      return serveWordList(request, options);
-    }
-
-    const wordId = routeSegment(url.pathname, "/api/words/");
-    if (wordId !== null) {
-      return serveWord(request, wordId, options);
-    }
-
-    const mediaId = routeSegment(url.pathname, "/api/media/");
-
-    if (mediaId !== null) {
-      return serveMedia(request, mediaId, options);
-    }
-
-    if (url.pathname === "/api/health") {
-      if (!isAllowed(request, ["GET", "HEAD"])) {
-        return methodNotAllowed(["GET", "HEAD"]);
-      }
-
-      return json({ ok: true });
-    }
-
-    if (url.pathname === "/api/home") {
-      if (!isAllowed(request, ["GET", "HEAD"])) {
-        return methodNotAllowed(["GET", "HEAD"]);
-      }
-
-      return json(getHomePageData());
-    }
-
-    if (url.pathname.startsWith("/api/")) {
-      return json({ error: "Not found" }, { status: 404 });
-    }
-
-    if (!isAllowed(request, ["GET", "HEAD"])) {
-      return methodNotAllowed(["GET", "HEAD"]);
-    }
-
-    try {
-      return await serveStaticAsset(url.pathname);
-    } catch {
-      if (!isNavigationRequest(request, url.pathname)) {
-        return new Response("Not found", {
-          status: 404,
-          headers: { "content-type": "text/plain; charset=utf-8" },
-        });
-      }
-
-      try {
-        return await serveStaticAsset("/index.html");
-      } catch {
-        return new Response("Client build not found. Run `bun run build` first.", {
-          status: 503,
-          headers: { "content-type": "text/plain; charset=utf-8" },
-        });
-      }
-    }
+    return app.fetch(request);
   };
 }
