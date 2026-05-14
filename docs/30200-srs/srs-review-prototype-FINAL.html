@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Amika - SRS review prototype</title>
+<style>
+  :root {
+    --bg: #191919;
+    --bg-2: #202020;
+    --bg-3: #2a2a2a;
+    --border: #2f2f2f;
+    --text: #e8e8e8;
+    --dim: #8a8a8a;
+    --dimmer: #5a5a5a;
+    --srs: #c99a3a;
+    --srs-bg: #3a2e18;
+    --ok: #78b068;
+    --warn: #c97a3a;
+    --bad: #bf5f5f;
+    --blue: #7aa7d9;
+    --radius: 8px;
+    --sidebar-width: 300px;
+    --pane-head-height: 82px;
+    --content-max: 920px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    font-size: 18px;
+    line-height: 1.5;
+  }
+
+  .jp,
+  .jp * {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", -apple-system, sans-serif;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  #app {
+    display: flex;
+    height: 100vh;
+  }
+
+  #sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: var(--bg-2);
+    border-right: 1px solid var(--border);
+    padding: 42px 20px;
+  }
+
+  #logo {
+    padding: 0 16px 30px;
+    font-size: 32px;
+    font-weight: 700;
+  }
+
+  #logo .dim {
+    color: var(--dim);
+    font-weight: 500;
+    margin-left: 10px;
+  }
+
+  #sidebar h3 {
+    margin: 44px 16px 18px;
+    color: var(--dim);
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 58px;
+    padding: 0 16px;
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 27px;
+    font-weight: 600;
+  }
+
+  .nav-item.muted {
+    color: var(--dim);
+  }
+
+  .nav-item.active {
+    background: var(--bg-3);
+  }
+
+  .badge {
+    min-width: 48px;
+    height: 36px;
+    padding: 3px 12px;
+    border-radius: 18px;
+    background: var(--srs-bg);
+    color: var(--srs);
+    font-size: 20px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .kbd {
+    padding: 6px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-3);
+    color: var(--dim);
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 18px;
+  }
+
+  #main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pane-head {
+    height: var(--pane-head-height);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 38px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+
+  .pill {
+    padding: 2px 15px 4px;
+    border-radius: var(--radius);
+    background: var(--bg-3);
+    color: var(--dim);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pane-title {
+    flex: 1;
+    color: var(--dim);
+    font-size: 28px;
+    font-weight: 600;
+  }
+
+  .close {
+    color: var(--dimmer);
+    font-size: 42px;
+    line-height: 1;
+  }
+
+  .pane-body {
+    flex: 1;
+    overflow: auto;
+    padding: 54px 64px 72px;
+  }
+
+  .review-shell {
+    width: min(100%, var(--content-max));
+    margin: 0 auto;
+  }
+
+  .review-top {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 34px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 46px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .subtitle {
+    margin-top: 14px;
+    color: var(--dim);
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .progress {
+    color: var(--dim);
+    font-size: 18px;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .progress-bar {
+    width: 240px;
+    height: 8px;
+    margin-top: 10px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: var(--srs);
+    transition: width 160ms ease;
+  }
+
+  .review-card {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 34px 38px 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-2);
+  }
+
+  .card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 34px;
+  }
+
+  .card-kind {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--srs);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card-kind::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--srs);
+  }
+
+  .card-schedule {
+    color: var(--dim);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .card-face {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 22px;
+    min-height: 290px;
+    padding: 12px 0;
+    text-align: center;
+  }
+
+  .kanji-prompt {
+    color: var(--text);
+    font-size: clamp(96px, 14vw, 170px);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .meaning-prompt {
+    color: var(--text);
+    font-size: clamp(50px, 7vw, 88px);
+    font-weight: 800;
+    line-height: 1.05;
+  }
+
+  .reading-stack {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    max-width: 650px;
+  }
+
+  .reading-chip {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  .reading-chip.on {
+    color: var(--warn);
+  }
+
+  .reading-chip.kun {
+    color: var(--blue);
+  }
+
+  .prompt-note {
+    color: var(--dim);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .answer-panel {
+    width: min(100%, 690px);
+    padding: 22px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    text-align: left;
+  }
+
+  .answer-grid {
+    display: grid;
+    grid-template-columns: 128px 1fr;
+    gap: 11px 16px;
+    align-items: baseline;
+  }
+
+  .answer-label {
+    color: var(--dim);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .answer-value {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .answer-value.big {
+    font-size: 56px;
+    line-height: 1;
+  }
+
+  .answer-value .dim {
+    color: var(--dim);
+    font-weight: 600;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    min-height: 54px;
+  }
+
+  .btn {
+    min-width: 116px;
+    min-height: 48px;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-3);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .btn:hover {
+    border-color: var(--dimmer);
+  }
+
+  .btn.primary {
+    min-width: 180px;
+    background: var(--srs-bg);
+    color: var(--srs);
+    border-color: rgba(201, 154, 58, 0.65);
+  }
+
+  .btn.again { color: var(--bad); }
+  .btn.hard { color: var(--warn); }
+  .btn.good { color: var(--ok); }
+  .btn.easy { color: var(--blue); }
+
+  .summary {
+    display: none;
+    padding: 42px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-2);
+  }
+
+  .summary.show {
+    display: block;
+  }
+
+  .summary h2 {
+    margin: 0 0 12px;
+    font-size: 36px;
+  }
+
+  .review-log {
+    margin-top: 26px;
+    border-top: 1px solid var(--border);
+  }
+
+  .log-row {
+    display: grid;
+    grid-template-columns: 52px 1fr 120px;
+    gap: 18px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 18px;
+  }
+
+  .log-row .jp {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  @media (max-width: 900px) {
+    html,
+    body {
+      overflow: auto;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    #app {
+      min-height: 100vh;
+    }
+
+    #sidebar {
+      display: none;
+    }
+
+    .pane-body {
+      padding: 32px 20px 42px;
+    }
+
+    .pane-head {
+      padding: 0 20px;
+    }
+
+    .review-top {
+      display: block;
+    }
+
+    .progress {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .progress-bar {
+      width: 100%;
+    }
+
+    .review-card {
+      min-height: 560px;
+      padding: 24px 18px;
+    }
+
+    .answer-grid {
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+
+    .log-row {
+      grid-template-columns: 42px 1fr;
+    }
+
+    .log-row .rating {
+      grid-column: 2;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div id="logo">Amika <span class="dim jp">網化</span></div>
+
+    <div class="nav-item">Home</div>
+    <div class="nav-item active"><span>Review</span><span class="badge" id="due-count">4</span></div>
+    <div class="nav-item muted">Search <span class="kbd">⌘K</span></div>
+
+    <h3>Library</h3>
+    <div class="nav-item">Words</div>
+    <div class="nav-item">Kanji</div>
+    <div class="nav-item muted">Grammar</div>
+    <div class="nav-item muted">Texts</div>
+  </aside>
+
+  <main id="main">
+    <div class="pane-head">
+      <span class="pill">SRS</span>
+      <div class="pane-title">Today's review</div>
+      <div class="close">×</div>
+    </div>
+
+    <div class="pane-body">
+      <section class="review-shell">
+        <div class="review-top">
+          <div>
+            <h1>Review</h1>
+            <div class="subtitle" id="review-subtitle">Recognition and production are scheduled separately.</div>
+          </div>
+          <div class="progress">
+            <div id="progress-label">1 of 4</div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          </div>
+        </div>
+
+        <article class="review-card" id="review-card"></article>
+
+        <section class="summary" id="summary">
+          <h2>Review complete</h2>
+          <div class="subtitle">This prototype keeps the flow in memory. Reset to try the cards again.</div>
+          <button class="btn primary" id="reset-button" type="button">Review again</button>
+          <div class="review-log" id="review-log"></div>
+        </section>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+const cards = [
+  {
+    id: "kanji-recognition-ta",
+    kanji: "多",
+    kind: "kanji_recognition",
+    kindLabel: "Recognition",
+    promptNote: "Name the readings and English meaning.",
+    meaning: "many; much",
+    on: ["タ"],
+    kun: ["おお.い"],
+    examples: [
+      { expression: "多い", reading: "おおい", meaning: "many; numerous" },
+      { expression: "多分", reading: "たぶん", meaning: "probably; perhaps" },
+    ],
+    schedule: "learning · due now",
+  },
+  {
+    id: "kanji-production-ta",
+    kanji: "多",
+    kind: "kanji_production",
+    kindLabel: "Production",
+    promptNote: "Produce the kanji from the meaning and readings.",
+    meaning: "many; much",
+    on: ["タ"],
+    kun: ["おお.い"],
+    examples: [
+      { expression: "多い", reading: "おおい", meaning: "many; numerous" },
+      { expression: "多分", reading: "たぶん", meaning: "probably; perhaps" },
+    ],
+    schedule: "review · due now",
+  },
+  {
+    id: "kanji-recognition-you",
+    kanji: "要",
+    kind: "kanji_recognition",
+    kindLabel: "Recognition",
+    promptNote: "Name the readings and English meaning.",
+    meaning: "need; necessary; important; essence",
+    on: ["ヨウ"],
+    kun: ["い.る", "かなめ"],
+    examples: [
+      { expression: "必要", reading: "ひつよう", meaning: "necessary; needed" },
+      { expression: "重要", reading: "じゅうよう", meaning: "important" },
+      { expression: "要る", reading: "いる", meaning: "to need" },
+      { expression: "要", reading: "かなめ", meaning: "main point; pivot" },
+    ],
+    schedule: "learning · due now",
+  },
+  {
+    id: "kanji-production-you",
+    kanji: "要",
+    kind: "kanji_production",
+    kindLabel: "Production",
+    promptNote: "Produce the kanji from the meaning and readings.",
+    meaning: "need; necessary; important; essence",
+    on: ["ヨウ"],
+    kun: ["い.る", "かなめ"],
+    examples: [
+      { expression: "必要", reading: "ひつよう", meaning: "necessary; needed" },
+      { expression: "重要", reading: "じゅうよう", meaning: "important" },
+      { expression: "要る", reading: "いる", meaning: "to need" },
+      { expression: "要", reading: "かなめ", meaning: "main point; pivot" },
+    ],
+    schedule: "review · due now",
+  },
+];
+
+const ratings = [
+  { id: "again", label: "Again", next: "1 min" },
+  { id: "hard", label: "Hard", next: "6 min" },
+  { id: "good", label: "Good", next: "1 day" },
+  { id: "easy", label: "Easy", next: "4 days" },
+];
+
+let currentIndex = 0;
+let revealed = false;
+let log = [];
+
+const reviewCard = document.getElementById("review-card");
+const progressLabel = document.getElementById("progress-label");
+const progressFill = document.getElementById("progress-fill");
+const dueCount = document.getElementById("due-count");
+const summary = document.getElementById("summary");
+const reviewLog = document.getElementById("review-log");
+const resetButton = document.getElementById("reset-button");
+
+function escapeHtml(value) {
+  return value.replace(/[&<>"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+  }[character]));
+}
+
+function readingChips(card) {
+  const on = card.on.map((reading) => `<span class="reading-chip jp on">${escapeHtml(reading)}</span>`);
+  const kun = card.kun.map((reading) => `<span class="reading-chip jp kun">${escapeHtml(reading)}</span>`);
+  return [...on, ...kun].join("");
+}
+
+function examples(card) {
+  return card.examples
+    .map((example) => `<span class="jp">${escapeHtml(example.expression)}</span> <span class="dim jp">${escapeHtml(example.reading)}</span> - ${escapeHtml(example.meaning)}`)
+    .join("<br>");
+}
+
+function prompt(card) {
+  if (card.kind === "kanji_recognition") {
+    return `
+      <div class="kanji-prompt jp">${escapeHtml(card.kanji)}</div>
+      <div class="prompt-note">${escapeHtml(card.promptNote)}</div>
+    `;
+  }
+
+  return `
+    <div class="meaning-prompt">${escapeHtml(card.meaning)}</div>
+    <div class="reading-stack">${readingChips(card)}</div>
+    <div class="prompt-note">${escapeHtml(card.promptNote)}</div>
+  `;
+}
+
+function answer(card) {
+  const primaryAnswer = card.kind === "kanji_recognition"
+    ? `<div class="answer-value">${escapeHtml(card.meaning)}</div>`
+    : `<div class="answer-value big jp">${escapeHtml(card.kanji)}</div>`;
+
+  return `
+    <div class="answer-panel">
+      <div class="answer-grid">
+        <div class="answer-label">${card.kind === "kanji_recognition" ? "Meaning" : "Kanji"}</div>
+        ${primaryAnswer}
+        <div class="answer-label">Onyomi</div>
+        <div class="answer-value jp">${escapeHtml(card.on.join(", "))}</div>
+        <div class="answer-label">Kunyomi</div>
+        <div class="answer-value jp">${escapeHtml(card.kun.join(", "))}</div>
+        <div class="answer-label">Examples</div>
+        <div class="answer-value">${examples(card)}</div>
+      </div>
+    </div>
+  `;
+}
+
+function controls(card) {
+  if (!revealed) {
+    return `<button class="btn primary" id="reveal-button" type="button">Reveal answer</button>`;
+  }
+
+  return ratings
+    .map((rating) => `<button class="btn ${rating.id}" data-rating="${rating.id}" type="button">${rating.label}</button>`)
+    .join("");
+}
+
+function render() {
+  const done = currentIndex >= cards.length;
+  const completed = Math.min(currentIndex, cards.length);
+  const progress = cards.length === 0 ? 1 : completed / cards.length;
+
+  progressLabel.textContent = done ? `${cards.length} of ${cards.length}` : `${currentIndex + 1} of ${cards.length}`;
+  progressFill.style.width = `${Math.round(progress * 100)}%`;
+  dueCount.textContent = String(Math.max(cards.length - currentIndex, 0));
+
+  if (done) {
+    reviewCard.style.display = "none";
+    summary.classList.add("show");
+    renderLog();
+    return;
+  }
+
+  const card = cards[currentIndex];
+  summary.classList.remove("show");
+  reviewCard.style.display = "";
+  reviewCard.innerHTML = `
+    <div class="card-meta">
+      <div class="card-kind">${escapeHtml(card.kindLabel)}</div>
+      <div class="card-schedule">${escapeHtml(card.schedule)}</div>
+    </div>
+    <div class="card-face">
+      ${prompt(card)}
+      ${revealed ? answer(card) : ""}
+    </div>
+    <div class="controls">${controls(card)}</div>
+  `;
+
+  const revealButton = document.getElementById("reveal-button");
+  if (revealButton) {
+    revealButton.addEventListener("click", () => {
+      revealed = true;
+      render();
+    });
+  }
+
+  reviewCard.querySelectorAll("[data-rating]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const rating = ratings.find((candidate) => candidate.id === button.dataset.rating);
+      log.push({
+        kanji: card.kanji,
+        kind: card.kindLabel,
+        rating: rating.label,
+        next: rating.next,
+      });
+      currentIndex += 1;
+      revealed = false;
+      render();
+    });
+  });
+}
+
+function renderLog() {
+  reviewLog.innerHTML = log
+    .map((entry) => `
+      <div class="log-row">
+        <div class="jp">${escapeHtml(entry.kanji)}</div>
+        <div>${escapeHtml(entry.kind)} · next ${escapeHtml(entry.next)}</div>
+        <div class="rating">${escapeHtml(entry.rating)}</div>
+      </div>
+    `)
+    .join("");
+}
+
+resetButton.addEventListener("click", () => {
+  currentIndex = 0;
+  revealed = false;
+  log = [];
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

@@ -23,6 +23,10 @@
 - Run code that imports `better-sqlite3` with Node/tsx, not `bun`; Bun cannot load this native module in this project.
 
 
+## Data modeling
+- When suggesting table schemas or table states, include primary key and foreign key information.
+
+
 ## CSS
 - Use CSS custom properties for repeated colors, spacing, dimensions, borders, and radii. Prefer using these custom properties, even for one-off values, to keep the visual language consistent and refactorable.
 

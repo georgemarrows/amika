@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>T-30200 SRS Review Prototype</title>
+<style>
+  :root {
+    --bg: #171716;
+    --page: #1f1f1d;
+    --panel: #272724;
+    --panel-raised: #30302c;
+    --surface: #f6f5f1;
+    --surface-ink: #11110f;
+    --border: #3f3f38;
+    --border-strong: #59584e;
+    --text: #eceae0;
+    --muted: #aaa89b;
+    --dim: #787568;
+    --accent: #4aa884;
+    --accent-strong: #35b37d;
+    --accent-soft: rgba(74, 168, 132, 0.14);
+    --read: #d48b20;
+    --link: #4c92d9;
+    --danger: #da6c5f;
+    --warn: #d0aa4d;
+    --ok: #78b866;
+    --shadow: rgba(0, 0, 0, 0.24);
+    --radius: 8px;
+    --radius-small: 6px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --measure: 1180px;
+    --card-width: 360px;
+    --card-height: 500px;
+    --button-height: 52px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--bg);
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  .page {
+    width: min(var(--measure), calc(100% - 32px));
+    margin: 0 auto;
+    padding: var(--space-6) 0 56px;
+  }
+
+  .masthead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-5);
+    align-items: end;
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    color: var(--accent-strong);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    margin-top: var(--space-2);
+    max-width: 760px;
+    font-size: 38px;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  h2 {
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  h3 {
+    font-size: 16px;
+    line-height: 1.2;
+    letter-spacing: 0;
+  }
+
+  .lead {
+    max-width: 800px;
+    margin-top: var(--space-3);
+    color: var(--muted);
+  }
+
+  .day-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(92px, 1fr));
+    gap: var(--space-2);
+    min-width: 330px;
+  }
+
+  .metric {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    padding: var(--space-3);
+  }
+
+  .metric-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 760;
+    line-height: 1;
+  }
+
+  .metric-label {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 230px minmax(0, 1fr) 280px;
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+  }
+
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    padding: var(--space-4);
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .panel-note {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .queue-list {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .queue-item {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+    background: #22221f;
+    color: var(--text);
+    padding: var(--space-3);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .queue-item:hover,
+  .queue-item.active {
+    border-color: rgba(74, 168, 132, 0.7);
+    background: var(--accent-soft);
+  }
+
+  .queue-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .queue-kanji {
+    font-size: 24px;
+    font-weight: 760;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 2px 9px;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .badge.recognition {
+    border-color: rgba(76, 146, 217, 0.45);
+    color: #86bdf0;
+  }
+
+  .badge.production {
+    border-color: rgba(208, 170, 77, 0.5);
+    color: #e0c272;
+  }
+
+  .badge.learning {
+    border-color: rgba(218, 108, 95, 0.45);
+    color: #e59086;
+  }
+
+  .queue-sub {
+    margin-top: var(--space-1);
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .review-panel {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-4);
+    min-height: 680px;
+  }
+
+  .review-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    width: min(100%, 760px);
+  }
+
+  .card-shell {
+    width: min(100%, var(--card-width));
+  }
+
+  .study-card {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: 100%;
+    min-height: var(--card-height);
+    border: 1px solid #d8d5ca;
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--surface-ink);
+    box-shadow: 0 18px 45px var(--shadow);
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border-bottom: 1px solid #e0ddd3;
+    padding: var(--space-3) var(--space-4);
+    color: #615f58;
+    font-size: 13px;
+  }
+
+  .card-face {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    text-align: center;
+  }
+
+  .card-footer {
+    border-top: 1px solid #e0ddd3;
+    padding: var(--space-3) var(--space-4);
+    color: #69665e;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .kanji-prompt {
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+    font-size: 170px;
+    font-weight: 800;
+    line-height: 0.95;
+  }
+
+  .meaning {
+    color: #00a13c;
+    font-size: 82px;
+    font-weight: 780;
+    line-height: 0.95;
+  }
+
+  .onyomi {
+    color: var(--read);
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .kunyomi {
+    display: grid;
+    gap: var(--space-2);
+    font-size: 34px;
+    font-weight: 760;
+    line-height: 1.1;
+  }
+
+  .jp-answer {
+    font-family: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+    font-size: 190px;
+    font-weight: 820;
+    line-height: 0.95;
+  }
+
+  .compound-prompt {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+  }
+
+  .adj-reading {
+    font-size: 44px;
+    font-weight: 760;
+  }
+
+  .adj-reading .stem {
+    color: var(--surface-ink);
+  }
+
+  .adj-reading .ending {
+    color: #1688e3;
+  }
+
+  .answer-block {
+    display: none;
+    width: 100%;
+    border-top: 1px solid #e3e0d6;
+    padding-top: var(--space-4);
+  }
+
+  .example-line {
+    margin-top: var(--space-1);
+    color: #69665e;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .study-card.revealed .answer-block {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .prompt-label {
+    color: #77746b;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .reveal-row,
+  .rating-row {
+    display: grid;
+    width: min(100%, 760px);
+    gap: var(--space-2);
+  }
+
+  .reveal-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rating-row {
+    display: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .rating-row.visible {
+    display: grid;
+  }
+
+  .action-button,
+  .rating-button {
+    min-height: var(--button-height);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-small);
+    background: var(--panel-raised);
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .action-button {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #07130f;
+    font-weight: 780;
+  }
+
+  .rating-button {
+    display: grid;
+    align-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2);
+  }
+
+  .rating-button:hover {
+    border-color: var(--accent);
+    background: #383832;
+  }
+
+  .rating-label {
+    font-weight: 760;
+  }
+
+  .rating-time {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .again {
+    border-color: rgba(218, 108, 95, 0.55);
+  }
+
+  .hard {
+    border-color: rgba(208, 170, 77, 0.55);
+  }
+
+  .good {
+    border-color: rgba(120, 184, 102, 0.55);
+  }
+
+  .easy {
+    border-color: rgba(76, 146, 217, 0.55);
+  }
+
+  .status-grid {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .status-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+    background: #22221f;
+    padding: var(--space-3);
+  }
+
+  .status-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .status-title {
+    font-weight: 760;
+  }
+
+  .status-lines {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-5);
+  }
+
+  .mini-card {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 330px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel);
+    overflow: hidden;
+  }
+
+  .mini-head {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .mini-face {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: var(--space-2);
+    background: var(--surface);
+    color: var(--surface-ink);
+    padding: var(--space-5);
+    text-align: center;
+  }
+
+  .mini-face .kanji-prompt,
+  .mini-face .jp-answer {
+    font-size: 118px;
+  }
+
+  .mini-face .meaning {
+    font-size: 54px;
+  }
+
+  .mini-face .onyomi {
+    font-size: 30px;
+  }
+
+  .mini-face .kunyomi {
+    font-size: 25px;
+  }
+
+  .note-list {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding-left: 1.1rem;
+    color: var(--muted);
+  }
+
+  @media (max-width: 1020px) {
+    .masthead,
+    .layout,
+    .compare {
+      grid-template-columns: 1fr;
+    }
+
+    .day-summary {
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 620px) {
+    :root {
+      --card-height: 450px;
+    }
+
+    .page {
+      width: min(100% - 20px, var(--measure));
+      padding-top: var(--space-4);
+    }
+
+    h1 {
+      font-size: 30px;
+    }
+
+    .day-summary,
+    .rating-row {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .kanji-prompt {
+      font-size: 128px;
+    }
+
+    .meaning {
+      font-size: 58px;
+    }
+
+    .onyomi {
+      font-size: 34px;
+    }
+
+    .kunyomi {
+      font-size: 28px;
+    }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">T-30200 SRS prototype</div>
+      <h1>Kanji review with separate recognition and production cards</h1>
+      <p class="lead">Hardcoded review flow showing the two kanji card kinds Amika should create from one kanji entering SRS.</p>
+    </div>
+    <section class="day-summary" aria-label="Today summary">
+      <div class="metric">
+        <span class="metric-value">18</span>
+        <span class="metric-label">due today</span>
+      </div>
+      <div class="metric">
+        <span class="metric-value">6</span>
+        <span class="metric-label">production</span>
+      </div>
+      <div class="metric">
+        <span class="metric-value">12</span>
+        <span class="metric-label">recognition</span>
+      </div>
+    </section>
+  </header>
+
+  <section class="layout">
+    <aside class="panel">
+      <div class="panel-title">
+        <h2>Queue</h2>
+        <span class="panel-note">hardcoded</span>
+      </div>
+      <div class="queue-list" id="queueList"></div>
+    </aside>
+
+    <section class="panel review-panel" aria-label="Review card">
+      <div class="review-bar">
+        <div>
+          <h2 id="reviewTitle">Recognition</h2>
+          <p class="panel-note" id="reviewSubtitle">Prompt with kanji, answer with readings and meaning.</p>
+        </div>
+        <span class="badge" id="reviewBadge">review</span>
+      </div>
+
+      <div class="card-shell">
+        <article class="study-card" id="studyCard">
+          <div class="card-header">
+            <span id="cardKindLabel">kanji recognition</span>
+            <span id="cardStateLabel">due now</span>
+          </div>
+          <div class="card-face" id="cardFace"></div>
+          <div class="card-footer" id="cardFooter">Press reveal, then rate your recall.</div>
+        </article>
+      </div>
+
+      <div class="reveal-row">
+        <button class="action-button" type="button" id="revealButton">Reveal answer</button>
+      </div>
+
+      <div class="rating-row" id="ratingRow" aria-label="Rating choices">
+        <button class="rating-button again" type="button" data-rating="Again">
+          <span class="rating-label">Again</span>
+          <span class="rating-time" data-time="again">10 min</span>
+        </button>
+        <button class="rating-button hard" type="button" data-rating="Hard">
+          <span class="rating-label">Hard</span>
+          <span class="rating-time" data-time="hard">1 day</span>
+        </button>
+        <button class="rating-button good" type="button" data-rating="Good">
+          <span class="rating-label">Good</span>
+          <span class="rating-time" data-time="good">4 days</span>
+        </button>
+        <button class="rating-button easy" type="button" data-rating="Easy">
+          <span class="rating-label">Easy</span>
+          <span class="rating-time" data-time="easy">9 days</span>
+        </button>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-title">
+        <h2>Kanji state</h2>
+        <span class="panel-note">per card</span>
+      </div>
+      <div class="status-grid" id="statusGrid"></div>
+    </aside>
+  </section>
+
+  <section class="compare" aria-label="Both card types">
+    <article class="mini-card">
+      <div class="mini-head">
+        <h3>Recognition card</h3>
+        <span class="badge recognition">kanji to meaning</span>
+      </div>
+      <div class="mini-face">
+        <div class="prompt-label">prompt</div>
+        <div class="kanji-prompt">要</div>
+        <div class="prompt-label">answer after reveal</div>
+        <div class="meaning">many</div>
+        <div class="onyomi">TA</div>
+        <div class="kunyomi">
+          <span>おお*い</span>
+          <span>たぶん</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="mini-card">
+      <div class="mini-head">
+        <h3>Production card</h3>
+        <span class="badge production">meaning to kanji</span>
+      </div>
+      <div class="mini-face">
+        <div class="prompt-label">prompt</div>
+        <div class="meaning">many</div>
+        <div class="onyomi">TA</div>
+        <div class="kunyomi">
+          <span>おお*い</span>
+          <span>たぶん</span>
+        </div>
+        <div class="prompt-label">answer after reveal</div>
+        <div class="jp-answer">要</div>
+        <div class="example-line">example: <span class="stem">重要</span><span class="ending">な</span></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel" style="margin-top: var(--space-5);">
+    <div class="panel-title">
+      <h2>Useful prototype details</h2>
+      <span class="panel-note">implementation hints</span>
+    </div>
+    <ul class="note-list">
+      <li>The queue intentionally interleaves recognition and production cards, but each card keeps its own due date, interval, ease, reps, and lapses.</li>
+      <li>The same kanji can look mature for recognition and fragile for production, so the kanji page should show both states instead of one combined SRS badge.</li>
+      <li>Rating buttons show the next interval preview from the current card state. The exact scheduler math can change without changing this UI shape.</li>
+      <li>Removing a kanji from SRS should probably disable both card kinds while preserving review history for re-enable and future import/debugging.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+  const cards = [
+    {
+      id: "kanji-yo-recognition",
+      kanji: "要",
+      kind: "recognition",
+      title: "Recognition",
+      subtitle: "Prompt with kanji, answer with readings and meaning.",
+      queue: "review",
+      due: "due now",
+      interval: "18 days",
+      ease: "245%",
+      reps: 34,
+      lapses: 1,
+      prompt: { kanji: "要" },
+      answer: {
+        meaning: "many",
+        onyomi: "TA",
+        kunyomi: ["おお*い", "たぶん"]
+      },
+      intervals: { again: "10 min", hard: "6 days", good: "18 days", easy: "1.2 mo" }
+    },
+    {
+      id: "kanji-yo-production",
+      kanji: "要",
+      kind: "production",
+      title: "Production",
+      subtitle: "Prompt with readings and meaning, answer with kanji.",
+      queue: "learning",
+      due: "due now",
+      interval: "10 min",
+      ease: "190%",
+      reps: 9,
+      lapses: 4,
+      prompt: {
+        meaning: "many",
+        onyomi: "TA",
+        kunyomi: ["おお*い", "たぶん"],
+        exampleHtml: '<span class="stem">重要</span><span class="ending">な</span>'
+      },
+      answer: { kanji: "要" },
+      intervals: { again: "5 min", hard: "10 min", good: "1 day", easy: "3 days" }
+    },
+    {
+      id: "kanji-gu-recognition",
+      kanji: "具",
+      kind: "recognition",
+      title: "Recognition",
+      subtitle: "Prompt with kanji, answer with readings and meaning.",
+      queue: "review",
+      due: "in 2 hours",
+      interval: "11 days",
+      ease: "235%",
+      reps: 22,
+      lapses: 0,
+      prompt: { kanji: "具" },
+      answer: {
+        meaning: "tool",
+        onyomi: "GU",
+        kunyomi: ["そな*える"]
+      },
+      intervals: { again: "10 min", hard: "3 days", good: "11 days", easy: "25 days" }
+    },
+    {
+      id: "kanji-gu-production",
+      kanji: "具",
+      kind: "production",
+      title: "Production",
+      subtitle: "Prompt with readings and meaning, answer with kanji.",
+      queue: "review",
+      due: "tomorrow",
+      interval: "3 days",
+      ease: "210%",
+      reps: 13,
+      lapses: 2,
+      prompt: {
+        meaning: "tool",
+        onyomi: "GU",
+        kunyomi: ["そな*える"],
+        exampleHtml: '<span class="stem">道具</span>'
+      },
+      answer: { kanji: "具" },
+      intervals: { again: "10 min", hard: "1 day", good: "3 days", easy: "7 days" }
+    }
+  ];
+
+  let activeCardId = cards[0].id;
+  let revealed = false;
+
+  const queueList = document.querySelector("#queueList");
+  const statusGrid = document.querySelector("#statusGrid");
+  const studyCard = document.querySelector("#studyCard");
+  const cardFace = document.querySelector("#cardFace");
+  const reviewTitle = document.querySelector("#reviewTitle");
+  const reviewSubtitle = document.querySelector("#reviewSubtitle");
+  const reviewBadge = document.querySelector("#reviewBadge");
+  const cardKindLabel = document.querySelector("#cardKindLabel");
+  const cardStateLabel = document.querySelector("#cardStateLabel");
+  const cardFooter = document.querySelector("#cardFooter");
+  const revealButton = document.querySelector("#revealButton");
+  const ratingRow = document.querySelector("#ratingRow");
+
+  function activeCard() {
+    return cards.find((card) => card.id === activeCardId) || cards[0];
+  }
+
+  function kindLabel(kind) {
+    return kind === "recognition" ? "kanji recognition" : "kanji production";
+  }
+
+  function renderQueue() {
+    queueList.innerHTML = cards.map((card) => `
+      <button class="queue-item ${card.id === activeCardId ? "active" : ""}" type="button" data-card-id="${card.id}">
+        <span class="queue-top">
+          <span class="queue-kanji">${card.kanji}</span>
+          <span class="badge ${card.kind}">${card.kind}</span>
+        </span>
+        <span class="queue-sub">${card.queue} · ${card.due} · ${card.interval}</span>
+      </button>
+    `).join("");
+  }
+
+  function renderStatus() {
+    const byKanji = cards.reduce((groups, card) => {
+      groups[card.kanji] ||= [];
+      groups[card.kanji].push(card);
+      return groups;
+    }, {});
+
+    statusGrid.innerHTML = Object.entries(byKanji).map(([kanji, group]) => `
+      <section class="status-card">
+        <div class="status-head">
+          <span class="status-title">${kanji}</span>
+          <span class="badge">in SRS</span>
+        </div>
+        <div class="status-lines">
+          ${group.map((card) => `
+            <div>
+              <strong>${card.kind}</strong>: ${card.queue}, ${card.due}, interval ${card.interval}, ease ${card.ease}, reps ${card.reps}, lapses ${card.lapses}
+            </div>
+          `).join("")}
+        </div>
+      </section>
+    `).join("");
+  }
+
+  function renderFace() {
+    const card = activeCard();
+    studyCard.classList.toggle("revealed", revealed);
+
+    if (card.kind === "recognition") {
+      cardFace.innerHTML = `
+        <div class="prompt-label">prompt</div>
+        <div class="kanji-prompt">${card.prompt.kanji}</div>
+        <div class="answer-block">
+          <div class="prompt-label">answer</div>
+          <div class="meaning">${card.answer.meaning}</div>
+          <div class="onyomi">${card.answer.onyomi}</div>
+          <div class="kunyomi">${card.answer.kunyomi.map((reading) => `<span>${reading}</span>`).join("")}</div>
+        </div>
+      `;
+      return;
+    }
+
+    cardFace.innerHTML = `
+      <div class="prompt-label">prompt</div>
+      <div class="compound-prompt">
+        <div class="meaning">${card.prompt.meaning}</div>
+        <div class="onyomi">${card.prompt.onyomi}</div>
+        <div class="kunyomi">${card.prompt.kunyomi.map((reading) => `<span>${reading}</span>`).join("")}</div>
+        <div class="example-line">example: ${card.prompt.exampleHtml}</div>
+      </div>
+      <div class="answer-block">
+        <div class="prompt-label">answer</div>
+        <div class="jp-answer">${card.answer.kanji}</div>
+      </div>
+    `;
+  }
+
+  function renderReview() {
+    const card = activeCard();
+    reviewTitle.textContent = card.title;
+    reviewSubtitle.textContent = card.subtitle;
+    reviewBadge.textContent = card.queue;
+    reviewBadge.className = `badge ${card.queue}`;
+    cardKindLabel.textContent = kindLabel(card.kind);
+    cardStateLabel.textContent = card.due;
+    cardFooter.textContent = revealed ? "Choose how well you recalled it." : "Press reveal, then rate your recall.";
+    revealButton.style.display = revealed ? "none" : "block";
+    ratingRow.classList.toggle("visible", revealed);
+
+    for (const time of document.querySelectorAll("[data-time]")) {
+      time.textContent = card.intervals[time.dataset.time];
+    }
+
+    renderFace();
+    renderQueue();
+  }
+
+  queueList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-card-id]");
+    if (!button) return;
+    activeCardId = button.dataset.cardId;
+    revealed = false;
+    renderReview();
+  });
+
+  revealButton.addEventListener("click", () => {
+    revealed = true;
+    renderReview();
+  });
+
+  ratingRow.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-rating]");
+    if (!button) return;
+
+    const card = activeCard();
+    cardFooter.textContent = `${button.dataset.rating} selected for ${kindLabel(card.kind)}. In the real app this would write a review row and advance the queue.`;
+  });
+
+  renderQueue();
+  renderStatus();
+  renderReview();
+</script>
+</body>
+</html>
