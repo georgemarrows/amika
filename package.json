@@ -16,7 +16,7 @@
     "test": "bun run test:client && bun run test:server && bun run test:db",
     "test:client": "bun test ./client/src/**/*.test.ts",
     "test:client:coverage": "bun test --coverage ./client/src/**/*.test.ts",
-    "test:server": "node --import tsx --test ./server/src/app.test.ts",
+    "test:server": "node --import tsx --test ./server/src/app.test.ts ./server/src/srs/*.test.ts",
     "test:server-importer:coverage": "node --import tsx --test --experimental-test-coverage ./server/src/app.test.ts ./server/src/db/*.test.ts ./scripts/*.test.ts",
     "test:db": "node --import tsx --test ./server/src/db/*.test.ts ./scripts/*.test.ts",
     "test:soak": "node --import tsx --test ./soaktest/*.test.ts",

@@ -21,6 +21,15 @@ export {
   upsertWordMeaning,
   replaceWordKanji,
 } from "./repositories.js";
+export {
+  disableKanjiSrs,
+  enableKanjiSrs,
+  getSrsCardById,
+  getSrsCardsForKanji,
+  insertSrsReview,
+  listDueSrsCards,
+  updateSrsCardState,
+} from "./srs-repositories.js";
 export type {
   KanjiReadingInput,
   KanjiReadingRow,
@@ -41,3 +50,7 @@ export type {
   WordMeaningRow,
   WordSummaryRow,
 } from "./repositories.js";
+export type {
+  SrsCardStateUpdateInput,
+  SrsReviewInsertInput,
+} from "./srs-repositories.js";

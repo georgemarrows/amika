@@ -15,7 +15,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [ ] T-30050 At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
 - [x] T-30100 Search - see docs/30100-search for details
 - [ ] T-30200 Simple @docs/30200-srs/srs-plan.md 
-- [ ] T-30200a Round 1 SRS Core
+- [x] T-30200a Round 1 SRS Core
 - [ ] T-30200b Round 2 Anki importer
 - [ ] T-30200c Round 3 UI & endpoints
 - [ ] T-30250 Backups

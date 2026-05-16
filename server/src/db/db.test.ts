@@ -36,7 +36,12 @@ describe("database migrations", () => {
         .prepare("select name from sqlite_master where type = 'table' and name = 'kanji'")
         .get();
 
-      assert.deepEqual(first.applied, ["001_initial_kanji.sql", "002_words.sql", "003_kanji_readings.sql"]);
+      assert.deepEqual(first.applied, [
+        "001_initial_kanji.sql",
+        "002_words.sql",
+        "003_kanji_readings.sql",
+        "004_srs.sql",
+      ]);
       assert.deepEqual(second.applied, []);
       assert.ok(table);
     } finally {
@@ -278,7 +283,7 @@ describe("kanji repository", () => {
       runMigrations(db);
       assert.deepEqual(
         db.prepare("select count(*) as count from schema_migrations").get() as { count: number },
-        { count: 3 },
+        { count: 4 },
       );
     } finally {
       db.close();
@@ -545,6 +550,134 @@ describe("kanji repository", () => {
       runMigrations(db);
 
       assert.deepEqual(searchLibrary(db, "  "), []);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("creates SRS tables with card identity and kanji foreign key constraints", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      upsertKanji(db, {
+        literal: "具",
+        primaryMeaning: "tool",
+        strokeCount: null,
+        strokeOrderMediaId: null,
+        frequencyRank: null,
+        usefulness: null,
+        sourceRecordId: null,
+        now: "2026-05-16T10:00:00.000Z",
+      });
+      db.prepare(`
+        insert into srs_cards (
+          id,
+          kanji_literal,
+          card_kind,
+          enabled,
+          scheduler_version,
+          state,
+          due_at,
+          interval_days,
+          ease_factor,
+          reps,
+          lapses,
+          last_reviewed_at,
+          created_at,
+          updated_at
+        )
+        values (
+          'card-1',
+          '具',
+          'kanji_recognition',
+          1,
+          'simple_sm2_v1',
+          'new',
+          '2026-05-16T10:00:00.000Z',
+          0,
+          2.5,
+          0,
+          0,
+          null,
+          '2026-05-16T10:00:00.000Z',
+          '2026-05-16T10:00:00.000Z'
+        )
+      `).run();
+
+      assert.throws(() => {
+        db.prepare(`
+          insert into srs_cards (
+            id,
+            kanji_literal,
+            card_kind,
+            enabled,
+            scheduler_version,
+            state,
+            due_at,
+            interval_days,
+            ease_factor,
+            reps,
+            lapses,
+            last_reviewed_at,
+            created_at,
+            updated_at
+          )
+          values (
+            'card-2',
+            '具',
+            'kanji_recognition',
+            1,
+            'simple_sm2_v1',
+            'new',
+            '2026-05-16T10:00:00.000Z',
+            0,
+            2.5,
+            0,
+            0,
+            null,
+            '2026-05-16T10:00:00.000Z',
+            '2026-05-16T10:00:00.000Z'
+          )
+        `).run();
+      });
+
+      assert.throws(() => {
+        db.prepare(`
+          insert into srs_cards (
+            id,
+            kanji_literal,
+            card_kind,
+            enabled,
+            scheduler_version,
+            state,
+            due_at,
+            interval_days,
+            ease_factor,
+            reps,
+            lapses,
+            last_reviewed_at,
+            created_at,
+            updated_at
+          )
+          values (
+            'card-3',
+            '未',
+            'kanji_recognition',
+            1,
+            'simple_sm2_v1',
+            'new',
+            '2026-05-16T10:00:00.000Z',
+            0,
+            2.5,
+            0,
+            0,
+            null,
+            '2026-05-16T10:00:00.000Z',
+            '2026-05-16T10:00:00.000Z'
+          )
+        `).run();
+      });
     } finally {
       db.close();
     }
