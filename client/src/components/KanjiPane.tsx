@@ -1,15 +1,40 @@
-import { For, Match, Show, Switch, createResource } from "solid-js";
+import { For, Match, Show, Switch, createResource, createSignal } from "solid-js";
 
-import { fetchKanjiDetail } from "../api";
+import { fetchKanjiDetail, setKanjiSrsEnabled } from "../api";
 import { createKanjiDetailViewModel } from "../models/kanji-detail-view-model";
+import type { SrsUiState } from "../state/srs-ui-state";
 import type { OpenFromPane } from "./pane-props";
 
 export function KanjiPane(props: {
   literal: string;
+  srsState: SrsUiState;
   paneIndex: number;
   openFromPane: OpenFromPane;
 }) {
-  const [detail] = createResource(() => props.literal, fetchKanjiDetail);
+  const [detail, { mutate }] = createResource(() => props.literal, fetchKanjiDetail);
+  const [srsPending, setSrsPending] = createSignal(false);
+  const [srsError, setSrsError] = createSignal<string | null>(null);
+
+  const toggleSrs = async (enabled: boolean) => {
+    const current = detail();
+
+    if (!current) {
+      return;
+    }
+
+    setSrsPending(true);
+    setSrsError(null);
+
+    try {
+      const srs = await setKanjiSrsEnabled(current.literal, enabled);
+      props.srsState.setDueCount(srs.dueCount);
+      mutate({ ...current, srs });
+    } catch (error) {
+      setSrsError(error instanceof Error ? error.message : "SRS status update failed.");
+    } finally {
+      setSrsPending(false);
+    }
+  };
 
   return (
     <Switch>
@@ -39,7 +64,38 @@ export function KanjiPane(props: {
                 <div class="glyph jp">{model.literal}</div>
               </div>
               <div class="kanji-meaning">{model.meaning}</div>
-              <div class="srs-btn">+ add to SRS</div>
+              <section class="kanji-srs-panel">
+                <div class="kanji-srs-header">
+                  <div>
+                    <div class="status-label">SRS</div>
+                    <div class="kanji-srs-status">{model.srs.statusLabel}</div>
+                  </div>
+                  <button
+                    class="srs-btn"
+                    type="button"
+                    disabled={srsPending()}
+                    onClick={() => void toggleSrs(!model.srs.enabled)}
+                  >
+                    {srsPending() ? "Updating..." : model.srs.actionLabel}
+                  </button>
+                </div>
+                <Show when={srsError()}>
+                  {(message) => <div class="review-error">{message()}</div>}
+                </Show>
+                <Show when={model.srs.cards.length > 0}>
+                  <div class="kanji-srs-card-list">
+                    <For each={model.srs.cards}>
+                      {(card) => (
+                        <div class={`kanji-srs-card ${card.enabled ? "enabled" : "disabled"}`}>
+                          <span>{card.label}</span>
+                          <span>{card.stateLabel}</span>
+                          <span>{card.dueLabel}</span>
+                        </div>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+              </section>
 
               <Show when={model.readingGroups.length > 0}>
                 <section class="section">

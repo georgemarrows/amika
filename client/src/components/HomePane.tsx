@@ -2,7 +2,7 @@ import { For } from "solid-js";
 
 import type { PaneBodyProps } from "./pane-props";
 
-export function HomePane(props: Pick<PaneBodyProps, "state" | "paneIndex" | "openFromPane">) {
+export function HomePane(props: Pick<PaneBodyProps, "state" | "srsState" | "paneIndex" | "openFromPane">) {
   return (
     <>
       <div class="hero">
@@ -12,7 +12,7 @@ export function HomePane(props: Pick<PaneBodyProps, "state" | "paneIndex" | "ope
 
       <button class="home-card review" type="button" onClick={() => props.openFromPane("review", props.paneIndex)}>
         <span class="h">Today's review</span>
-        <span class="big jp">{props.state.review.dueCount} cards due</span>
+        <span class="big jp">{props.srsState.dueCount()} cards due</span>
         <span class="meta">{props.state.review.summary}</span>
       </button>
 

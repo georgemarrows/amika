@@ -22,8 +22,10 @@ export {
   replaceWordKanji,
 } from "./repositories.js";
 export {
+  countDueSrsCards,
   disableKanjiSrs,
   enableKanjiSrs,
+  getNextDueSrsCard,
   getSrsCardById,
   getSrsCardsForKanji,
   insertSrsReview,

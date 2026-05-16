@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { fetchSearchResults } from "../api";
+import {
+  fetchSearchResults,
+  fetchSrsReviewQueue,
+  setKanjiSrsEnabled,
+  submitSrsReview,
+} from "../api";
 
 const originalFetch = globalThis.fetch;
 
@@ -36,5 +41,88 @@ describe("api", () => {
     globalThis.fetch = (() => Promise.resolve(new Response("Nope", { status: 503 }))) as unknown as typeof fetch;
 
     await expect(fetchSearchResults("勉")).rejects.toThrow("Failed to load search results: 503");
+  });
+
+  test("fetches the SRS review queue", async () => {
+    let requestedUrl = "";
+
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      requestedUrl = String(input);
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            dueCount: 0,
+            card: null,
+            generatedAt: "2026-05-16T10:00:00.000Z",
+          }),
+          { status: 200 },
+        ),
+      );
+    }) as unknown as typeof fetch;
+
+    await expect(fetchSrsReviewQueue()).resolves.toEqual({
+      dueCount: 0,
+      card: null,
+      generatedAt: "2026-05-16T10:00:00.000Z",
+    });
+    expect(requestedUrl).toBe("/api/srs/review");
+  });
+
+  test("submits SRS reviews as JSON", async () => {
+    let requestedUrl = "";
+    let requestedInit: RequestInit | undefined;
+
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      requestedUrl = String(input);
+      requestedInit = init;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            dueCount: 0,
+            reviewedCardId: "card",
+            nextCard: null,
+          }),
+          { status: 200 },
+        ),
+      );
+    }) as unknown as typeof fetch;
+
+    await expect(submitSrsReview("card", "good")).resolves.toEqual({
+      dueCount: 0,
+      reviewedCardId: "card",
+      nextCard: null,
+    });
+    expect(requestedUrl).toBe("/api/srs/reviews");
+    expect(requestedInit?.method).toBe("POST");
+    expect(requestedInit?.body).toBe(JSON.stringify({ cardId: "card", rating: "good" }));
+  });
+
+  test("updates kanji SRS status as JSON", async () => {
+    let requestedUrl = "";
+    let requestedInit: RequestInit | undefined;
+
+    globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      requestedUrl = String(input);
+      requestedInit = init;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            enabled: true,
+            dueCount: 2,
+            cards: [],
+          }),
+          { status: 200 },
+        ),
+      );
+    }) as unknown as typeof fetch;
+
+    await expect(setKanjiSrsEnabled("具", true)).resolves.toEqual({
+      enabled: true,
+      dueCount: 2,
+      cards: [],
+    });
+    expect(requestedUrl).toBe("/api/kanji/%E5%85%B7/srs");
+    expect(requestedInit?.method).toBe("POST");
+    expect(requestedInit?.body).toBe(JSON.stringify({ enabled: true }));
   });
 });

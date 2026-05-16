@@ -8,11 +8,18 @@ import type { PaneBodyProps } from "./pane-props";
 
 export function PaneBody(props: PaneBodyProps) {
   if (props.paneKey === "home") {
-    return <HomePane state={props.state} paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
+    return (
+      <HomePane
+        state={props.state}
+        srsState={props.srsState}
+        paneIndex={props.paneIndex}
+        openFromPane={props.openFromPane}
+      />
+    );
   }
 
   if (props.paneKey === "review") {
-    return <ReviewPane />;
+    return <ReviewPane srsState={props.srsState} />;
   }
 
   if (props.paneKey === "list-kanji") {
@@ -34,10 +41,11 @@ export function PaneBody(props: PaneBodyProps) {
   }
 
   return (
-    <KanjiPane
-      literal={props.paneKey.slice("kanji:".length)}
-      paneIndex={props.paneIndex}
-      openFromPane={props.openFromPane}
+      <KanjiPane
+        literal={props.paneKey.slice("kanji:".length)}
+        srsState={props.srsState}
+        paneIndex={props.paneIndex}
+        openFromPane={props.openFromPane}
     />
   );
 }

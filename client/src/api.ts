@@ -2,6 +2,12 @@ import type { HomePageData } from "../../shared/home-data";
 import type { KanjiDetailResponse } from "../../shared/kanji-detail";
 import type { KanjiListResponse, WordListResponse } from "../../shared/library-list";
 import type { SearchResponse } from "../../shared/search";
+import type {
+  KanjiSrsStatusResponse,
+  SrsReviewQueueResponse,
+  SrsReviewRating,
+  SrsReviewSubmitResponse,
+} from "../../shared/srs";
 import type { WordDetailResponse } from "../../shared/word-detail";
 
 export async function fetchHomePageData(): Promise<HomePageData> {
@@ -59,6 +65,48 @@ export async function fetchSearchResults(query: string, signal?: AbortSignal): P
 
   if (!response.ok) {
     throw new Error(`Failed to load search results: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchSrsReviewQueue(): Promise<SrsReviewQueueResponse> {
+  const response = await fetch("/api/srs/review");
+
+  if (!response.ok) {
+    throw new Error(`Failed to load SRS review queue: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function submitSrsReview(cardId: string, rating: SrsReviewRating): Promise<SrsReviewSubmitResponse> {
+  const response = await fetch("/api/srs/reviews", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ cardId, rating }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to submit SRS review: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function setKanjiSrsEnabled(literal: string, enabled: boolean): Promise<KanjiSrsStatusResponse> {
+  const response = await fetch(`/api/kanji/${encodeURIComponent(literal)}/srs`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ enabled }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update kanji SRS status: ${response.status}`);
   }
 
   return response.json();

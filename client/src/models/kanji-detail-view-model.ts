@@ -1,5 +1,6 @@
 import type { KanjiDetailResponse, KanjiWordSummary, MediaAsset } from "../../../shared/kanji-detail";
 import type { KanjiReading } from "../../../shared/kanji-reading";
+import { createKanjiSrsViewModel, type KanjiSrsViewModel } from "./kanji-srs-view-model";
 
 export type KanjiMetadataItem = {
   label: string;
@@ -11,6 +12,7 @@ export type KanjiDetailViewModel = {
   meaning: string;
   metadata: KanjiMetadataItem[];
   strokeOrderImage: MediaAsset | null;
+  srs: KanjiSrsViewModel;
   readingGroups: Array<{
     label: string;
     readings: KanjiReading[];
@@ -31,6 +33,7 @@ export function createKanjiDetailViewModel(detail: KanjiDetailResponse): KanjiDe
     meaning: detail.meaning,
     metadata,
     strokeOrderImage: detail.strokeOrderImage,
+    srs: createKanjiSrsViewModel(detail.srs),
     readingGroups: [
       { label: "On", readings: detail.readings.filter((reading) => reading.type === "on") },
       { label: "Kun", readings: detail.readings.filter((reading) => reading.type === "kun") },

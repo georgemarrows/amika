@@ -2,6 +2,12 @@ import { describe, expect, test } from "bun:test";
 
 import { createKanjiDetailViewModel } from "./kanji-detail-view-model";
 
+const noSrs = {
+  enabled: false,
+  dueCount: 0,
+  cards: [],
+};
+
 describe("createKanjiDetailViewModel", () => {
   test("formats imported kanji metadata", () => {
     const model = createKanjiDetailViewModel({
@@ -24,6 +30,7 @@ describe("createKanjiDetailViewModel", () => {
           usefulness: null,
         },
       ],
+      srs: noSrs,
       mnemonics: [],
       words: [],
       relations: [],
@@ -62,6 +69,7 @@ describe("createKanjiDetailViewModel", () => {
       strokeOrderImage: null,
       components: [],
       readings: [],
+      srs: noSrs,
       mnemonics: [],
       words: [
         {
@@ -100,6 +108,7 @@ describe("createKanjiDetailViewModel", () => {
         { type: "on", reading: "JITSU", meaning: null, usefulness: null },
         { type: "kun", reading: "ひ", meaning: "a day", usefulness: "★★★★★" },
       ],
+      srs: noSrs,
       mnemonics: [],
       words: [],
       relations: [],
@@ -132,6 +141,7 @@ describe("createKanjiDetailViewModel", () => {
       strokeOrderImage: null,
       components: [],
       readings: [],
+      srs: noSrs,
       mnemonics: [],
       words: [],
       relations: [],
@@ -144,5 +154,63 @@ describe("createKanjiDetailViewModel", () => {
     ]);
     expect(model.strokeOrderImage).toBeNull();
     expect(model.readingGroups).toEqual([]);
+  });
+
+  test("formats SRS status and per-card labels", () => {
+    const model = createKanjiDetailViewModel({
+      literal: "具",
+      meaning: "tool",
+      strokeCount: 8,
+      usefulness: "★★★★☆",
+      frequencyRank: 683,
+      strokeOrderImage: null,
+      components: [],
+      readings: [],
+      srs: {
+        enabled: true,
+        dueCount: 2,
+        cards: [
+          {
+            id: "production",
+            kanjiLiteral: "具",
+            cardKind: "kanji_production",
+            enabled: true,
+            schedulerVersion: "simple_sm2_v1",
+            state: "review",
+            dueAt: "2026-05-16T10:00:00.000Z",
+            intervalDays: 3,
+            easeFactor: 2.5,
+            reps: 4,
+            lapses: 0,
+            lastReviewedAt: null,
+          },
+          {
+            id: "recognition",
+            kanjiLiteral: "具",
+            cardKind: "kanji_recognition",
+            enabled: true,
+            schedulerVersion: "simple_sm2_v1",
+            state: "learning",
+            dueAt: "2026-05-16T10:00:00.000Z",
+            intervalDays: 0,
+            easeFactor: 2.5,
+            reps: 1,
+            lapses: 0,
+            lastReviewedAt: null,
+          },
+        ],
+      },
+      mnemonics: [],
+      words: [],
+      relations: [],
+    });
+
+    expect(model.srs.enabled).toBe(true);
+    expect(model.srs.statusLabel).toBe("In SRS");
+    expect(model.srs.actionLabel).toBe("Remove from SRS");
+    expect(model.srs.cards.map((card) => [card.label, card.stateLabel])).toEqual([
+      ["Production", "review"],
+      ["Recognition", "learning"],
+    ]);
   });
 });

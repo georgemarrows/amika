@@ -5,6 +5,7 @@ import type { HomePageData } from "../../../shared/home-data";
 import type { SearchTargetPaneKey } from "../../../shared/search";
 import { runClassAnimationAfterEvent } from "../dom/class-animation";
 import { createPaneState, describePane } from "../state/pane-state";
+import { createSrsUiState } from "../state/srs-ui-state";
 import { CommandPalette } from "./CommandPalette";
 import { PaneBody } from "./PaneBody";
 
@@ -13,6 +14,7 @@ export function PaneShell(props: { state: HomePageData }) {
   let handledScrollRequestId = -1;
   const paneState = createPaneState();
   const [searchOpen, setSearchOpen] = createSignal(false);
+  const srsState = createSrsUiState(props.state.review.dueCount);
 
   onMount(() => {
     const onGlobalKeyDown = (event: KeyboardEvent) => {
@@ -33,6 +35,7 @@ export function PaneShell(props: { state: HomePageData }) {
 
     window.addEventListener("keydown", onGlobalKeyDown);
     onCleanup(() => window.removeEventListener("keydown", onGlobalKeyDown));
+    void srsState.refreshDueCountFromQueue().catch(() => undefined);
   });
 
   const openSearchResult = (key: SearchTargetPaneKey) => {
@@ -79,7 +82,7 @@ export function PaneShell(props: { state: HomePageData }) {
           </button>
           <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("review")}>
             <span>Review</span>
-            <span class="badge">{props.state.review.dueCount}</span>
+            <span class="badge">{srsState.dueCount()}</span>
           </button>
           <button class="nav-item nav-item-dim" type="button" onClick={() => setSearchOpen(true)}>
             Search <span class="kbd">⌘K</span>
@@ -120,6 +123,7 @@ export function PaneShell(props: { state: HomePageData }) {
                   <PaneBody
                     paneKey={paneKey}
                     state={props.state}
+                    srsState={srsState}
                     paneIndex={index()}
                     openFromPane={paneState.openFromPane}
                   />

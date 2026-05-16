@@ -7,6 +7,7 @@ import { describe, test } from "node:test";
 import { createApp } from "./app.js";
 import {
   type Db,
+  enableKanjiSrs,
   getWordById,
   insertKanjiStubIfMissing,
   openDatabase,
@@ -101,6 +102,12 @@ function seedWordDetail(db: Db) {
   ]);
 }
 
+function seedSrsReviewData(db: Db, mediaRoot: string) {
+  seedKanjiDetail(db, mediaRoot);
+  seedWordDetail(db);
+  return enableKanjiSrs(db, "具", "2026-05-16T10:00:00.000Z");
+}
+
 function seedSearchData(db: Db) {
   runMigrations(db);
   upsertKanji(db, {
@@ -174,6 +181,11 @@ describe("server app", () => {
             usefulness: null,
           },
         ],
+        srs: {
+          enabled: false,
+          dueCount: 0,
+          cards: [],
+        },
         mnemonics: [],
         words: [
           {
@@ -267,6 +279,179 @@ describe("server app", () => {
       assert.deepEqual(await emptyResponse.json(), { query: "  ", items: [] });
     } finally {
       db.close();
+    }
+  });
+
+  test("returns the next due SRS review card with display data", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-srs-review-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedSrsReviewData(db, tempDir);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(new Request("http://localhost/api/srs/review"));
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.dueCount, 2);
+      assert.equal(body.card.kanjiLiteral, "具");
+      assert.equal(body.card.meaning, "tool");
+      assert.equal(body.card.cardKind, "kanji_production");
+      assert.deepEqual(body.card.readings, [
+        {
+          type: "on",
+          reading: "GU",
+          meaning: null,
+          usefulness: null,
+        },
+      ]);
+      assert.deepEqual(body.card.words, [
+        {
+          id: "word-dogu",
+          expression: "道具",
+          reading: "どうぐ",
+          meaning: "tool",
+          usefulness: "★★★★☆",
+        },
+      ]);
+      assert.match(body.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns an empty SRS queue when no cards are due", async () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      const app = createApp({ db });
+      const response = await app(new Request("http://localhost/api/srs/review"));
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.dueCount, 0);
+      assert.equal(body.card, null);
+      assert.match(body.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+    } finally {
+      db.close();
+    }
+  });
+
+  test("submits an SRS review and returns the next card", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-srs-submit-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      const [card] = seedSrsReviewData(db, tempDir);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(
+        new Request("http://localhost/api/srs/reviews", {
+          method: "POST",
+          body: JSON.stringify({ cardId: card.id, rating: "good" }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.reviewedCardId, card.id);
+      assert.equal(body.dueCount, 1);
+      assert.equal(body.nextCard.cardKind, "kanji_recognition");
+      assert.deepEqual(db.prepare("select count(*) as count from srs_reviews").get(), { count: 1 });
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns typed SRS review request errors", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-srs-error-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      const [card] = seedSrsReviewData(db, tempDir);
+      db.prepare("update srs_cards set enabled = 0 where id = ?").run(card.id);
+      const app = createApp({ db });
+      const invalidResponse = await app(
+        new Request("http://localhost/api/srs/reviews", {
+          method: "POST",
+          body: JSON.stringify({ cardId: card.id, rating: "medium" }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const missingResponse = await app(
+        new Request("http://localhost/api/srs/reviews", {
+          method: "POST",
+          body: JSON.stringify({ cardId: "missing", rating: "good" }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const disabledResponse = await app(
+        new Request("http://localhost/api/srs/reviews", {
+          method: "POST",
+          body: JSON.stringify({ cardId: card.id, rating: "good" }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+
+      assert.equal(invalidResponse.status, 400);
+      assert.deepEqual(await invalidResponse.json(), {
+        error: "invalid_request",
+        message: "Expected cardId and rating again/hard/good/easy",
+      });
+      assert.equal(missingResponse.status, 404);
+      assert.equal((await missingResponse.json()).error, "srs_card_not_found");
+      assert.equal(disabledResponse.status, 409);
+      assert.equal((await disabledResponse.json()).error, "srs_card_disabled");
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("toggles kanji SRS status without deleting review history", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-kanji-srs-toggle-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedKanjiDetail(db, tempDir);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const enableResponse = await app(
+        new Request("http://localhost/api/kanji/%E5%85%B7/srs", {
+          method: "POST",
+          body: JSON.stringify({ enabled: true }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const enableBody = await enableResponse.json();
+      const cardId = enableBody.cards[0].id;
+      await app(
+        new Request("http://localhost/api/srs/reviews", {
+          method: "POST",
+          body: JSON.stringify({ cardId, rating: "again" }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const disableResponse = await app(
+        new Request("http://localhost/api/kanji/%E5%85%B7/srs", {
+          method: "POST",
+          body: JSON.stringify({ enabled: false }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const disableBody = await disableResponse.json();
+
+      assert.equal(enableResponse.status, 200);
+      assert.equal(enableBody.enabled, true);
+      assert.equal(enableBody.cards.length, 2);
+      assert.equal(disableResponse.status, 200);
+      assert.equal(disableBody.enabled, false);
+      assert.deepEqual(db.prepare("select count(*) as count from srs_reviews").get(), { count: 1 });
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
     }
   });
 

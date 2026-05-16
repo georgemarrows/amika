@@ -17,7 +17,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [ ] T-30200 Simple @docs/30200-srs/srs-plan.md 
 - [x] T-30200a Round 1 SRS Core
 - [x] T-30200b Round 2 Anki importer
-- [ ] T-30200c Round 3 UI & endpoints
+- [x] T-30200c Round 3 UI & endpoints
 - [ ] T-30250 Backups
 - [ ] T-30300 Import Anki status?
 - [ ] T-30400 Add example sentences. Following deleted non-words could go in examples

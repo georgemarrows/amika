@@ -145,14 +145,6 @@ export function enableKanjiSrs(db: Db, literal: string, now: string): SrsCard[] 
     )
     on conflict(kanji_literal, card_kind) do update set
       enabled = 1,
-      scheduler_version = excluded.scheduler_version,
-      state = excluded.state,
-      due_at = excluded.due_at,
-      interval_days = excluded.interval_days,
-      ease_factor = excluded.ease_factor,
-      reps = excluded.reps,
-      lapses = excluded.lapses,
-      last_reviewed_at = excluded.last_reviewed_at,
       updated_at = excluded.updated_at
   `);
 
@@ -269,6 +261,25 @@ export function listDueSrsCards(db: Db, now: string, limit: number): SrsCard[] {
     )
     .all(now, limit)
     .map((row) => toSrsCard(row as SrsCardDbRow));
+}
+
+export function countDueSrsCards(db: Db, now: string): number {
+  const row = db
+    .prepare(
+      `
+      select count(*) as count
+      from srs_cards
+      where enabled = 1
+        and due_at <= ?
+      `,
+    )
+    .get(now) as { count: number };
+
+  return row.count;
+}
+
+export function getNextDueSrsCard(db: Db, now: string): SrsCard | null {
+  return listDueSrsCards(db, now, 1)[0] ?? null;
 }
 
 export function upsertImportedSrsCard(db: Db, input: SrsCardImportInput): SrsCard {
