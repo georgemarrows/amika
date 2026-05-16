@@ -29,6 +29,7 @@ For the production-style build, run `bun run build`, then `bun run start`, then 
 - `bun run dev`
 - `bun run db:migrate`
 - `bun run import:kanji-damage -- Official_KanjiDamage_deck_REORDERED.apkg`
+- `bun run import:anki-srs-kanji -- --dry-run`
 - `bun run repair:kanji-damage-import -- --dry-run`
 - `bun run build`
 - `bun run test`
@@ -102,6 +103,26 @@ sqlite3 .var/amika.sqlite "select 'kanji', count(*) from kanji union all select 
 
 `bun run test` runs the fast test suite. `bun run test:soak` runs optional full-deck import checks against the local APKG and is intentionally kept out of the default loop.
 
+## Import Anki Kanji SRS State
+
+Anki remains the source of truth until SRS cutover. The importer seeds Amika `srs_cards` from the local `_Work / KLC` deck without importing Anki's note/card template model as Amika runtime state.
+
+Close Anki before running the importer. The command refuses to read an active profile when `collection.anki2-wal` is present.
+
+Preview the proposed import without changing `.var/amika.sqlite`:
+
+```sh
+bun run import:anki-srs-kanji -- --dry-run
+```
+
+Apply the import:
+
+```sh
+bun run import:anki-srs-kanji -- --apply
+```
+
+On `--apply`, the importer runs migrations, creates a verified backup when `.var/amika.sqlite` already exists, upserts kanji stubs if needed, replaces current SRS state for imported KanjiDamage cards, and records Anki provenance in `srs_import_links`. The default source profile is `/Users/georgem/Library/Application Support/Anki2/User 1/collection.anki2`; override it with `--collection`.
+
 ## Repair Imported Kanji Damage Data
 
 Importer bug fixes that add or replace rows can usually be applied by rerunning the importer. Data deletion is handled separately so cleanup is explicit and backed up.
@@ -121,4 +142,3 @@ bun run repair:kanji-damage-import -- --apply
 The repair command only targets importer-shaped word IDs whose expressions are Kanji Damage templates or examples with ASCII letters or digits, such as `1969年`, `XXX専`, and `xxx人`. On `--apply`, it creates and verifies a SQLite backup before deleting matching rows plus their word meanings and kanji links.
 
 The DB/import scripts and local HTTP server run through Node because `better-sqlite3` is a native Node module. The project still uses `bun` for package management and the main command entrypoints.
-

@@ -46,6 +46,37 @@ export type SrsReviewInsertInput = {
 
 export type SrsCardStateUpdateInput = SrsNextCardState;
 
+export type SrsCardImportInput = {
+  id: string;
+  kanjiLiteral: string;
+  cardKind: SrsCardKind;
+  enabled: boolean;
+  schedulerVersion: string;
+  state: SrsCard["state"];
+  dueAt: string;
+  intervalDays: number;
+  easeFactor: number;
+  reps: number;
+  lapses: number;
+  lastReviewedAt: string | null;
+  now: string;
+};
+
+export type SrsImportLinkInput = {
+  id: string;
+  cardId: string;
+  source: string;
+  sourceCollectionPath: string;
+  sourceDeckId: string;
+  sourceDeckName: string | null;
+  sourceNoteId: string;
+  sourceCardId: string;
+  sourceCardOrd: number;
+  sourceNotetypeId: string | null;
+  sourceTemplateName: string | null;
+  importedAt: string;
+};
+
 const kanjiCardKinds: SrsCardKind[] = ["kanji_recognition", "kanji_production"];
 
 function toSrsCard(row: SrsCardDbRow): SrsCard {
@@ -238,6 +269,111 @@ export function listDueSrsCards(db: Db, now: string, limit: number): SrsCard[] {
     )
     .all(now, limit)
     .map((row) => toSrsCard(row as SrsCardDbRow));
+}
+
+export function upsertImportedSrsCard(db: Db, input: SrsCardImportInput): SrsCard {
+  db.prepare(`
+    insert into srs_cards (
+      id,
+      kanji_literal,
+      card_kind,
+      enabled,
+      scheduler_version,
+      state,
+      due_at,
+      interval_days,
+      ease_factor,
+      reps,
+      lapses,
+      last_reviewed_at,
+      created_at,
+      updated_at
+    )
+    values (
+      @id,
+      @kanjiLiteral,
+      @cardKind,
+      @enabled,
+      @schedulerVersion,
+      @state,
+      @dueAt,
+      @intervalDays,
+      @easeFactor,
+      @reps,
+      @lapses,
+      @lastReviewedAt,
+      @now,
+      @now
+    )
+    on conflict(kanji_literal, card_kind) do update set
+      enabled = excluded.enabled,
+      scheduler_version = excluded.scheduler_version,
+      state = excluded.state,
+      due_at = excluded.due_at,
+      interval_days = excluded.interval_days,
+      ease_factor = excluded.ease_factor,
+      reps = excluded.reps,
+      lapses = excluded.lapses,
+      last_reviewed_at = excluded.last_reviewed_at,
+      updated_at = excluded.updated_at
+  `).run({
+    ...input,
+    enabled: input.enabled ? 1 : 0,
+  });
+
+  const card = getSrsCardById(db, input.id);
+
+  if (!card) {
+    throw new Error(`Imported SRS card was not created: ${input.id}`);
+  }
+
+  return card;
+}
+
+export function upsertSrsImportLink(db: Db, input: SrsImportLinkInput) {
+  db.prepare(`
+    insert into srs_import_links (
+      id,
+      card_id,
+      source,
+      source_collection_path,
+      source_deck_id,
+      source_deck_name,
+      source_note_id,
+      source_card_id,
+      source_card_ord,
+      source_notetype_id,
+      source_template_name,
+      imported_at
+    )
+    values (
+      @id,
+      @cardId,
+      @source,
+      @sourceCollectionPath,
+      @sourceDeckId,
+      @sourceDeckName,
+      @sourceNoteId,
+      @sourceCardId,
+      @sourceCardOrd,
+      @sourceNotetypeId,
+      @sourceTemplateName,
+      @importedAt
+    )
+    on conflict(
+      source,
+      source_collection_path,
+      source_deck_id,
+      source_note_id,
+      source_card_id
+    ) do update set
+      card_id = excluded.card_id,
+      source_deck_name = excluded.source_deck_name,
+      source_card_ord = excluded.source_card_ord,
+      source_notetype_id = excluded.source_notetype_id,
+      source_template_name = excluded.source_template_name,
+      imported_at = excluded.imported_at
+  `).run(input);
 }
 
 export function insertSrsReview(db: Db, input: SrsReviewInsertInput): SrsReviewRow {
