@@ -24,8 +24,8 @@ export function getHomePageData(): HomePageData {
     title: "A personal Japanese workspace",
     subtitle: "Prototype-inspired scaffold: one simple home screen, one API, no pane navigation yet.",
     review: {
-      dueCount: 12,
-      summary: "Mix of words, kanji, and grammar with a short six-minute review block.",
+      dueCount: 0,
+      summary: "Review queue updates from your local SRS data.",
     },
     latestSource: {
       title: "Lesson 12",
@@ -48,4 +48,3 @@ export function getHomePageData(): HomePageData {
     ],
   };
 }
-

@@ -1,4 +1,12 @@
-import { For, Match, Show, Switch, createEffect, createResource, createSignal } from "solid-js";
+import {
+  For,
+  Match,
+  Show,
+  Switch,
+  createEffect,
+  createResource,
+  createSignal,
+} from "solid-js";
 
 import { fetchSrsReviewQueue, submitSrsReview } from "../api";
 import {
@@ -63,7 +71,9 @@ export function ReviewPane(props: { srsState: SrsUiState }) {
       });
       setRevealed(false);
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : "Review submission failed.");
+      setSubmitError(
+        error instanceof Error ? error.message : "Review submission failed.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -88,12 +98,7 @@ export function ReviewPane(props: { srsState: SrsUiState }) {
         {(loadedQueue) => (
           <section class="review-shell">
             <div class="review-top">
-              <div>
-                <div class="hero">
-                  <div class="section-title">Review</div>
-                </div>
-                <div class="subtitle">Recognition and production are scheduled separately.</div>
-              </div>
+              <div class="section-title">Review</div>
               <div class="review-progress">{loadedQueue().dueCount} due</div>
             </div>
 
@@ -175,14 +180,18 @@ export function ReviewPane(props: { srsState: SrsUiState }) {
   );
 }
 
-function ReadingStack(props: { card: ReturnType<typeof createSrsReviewCardViewModel> }) {
+function ReadingStack(props: {
+  card: ReturnType<typeof createSrsReviewCardViewModel>;
+}) {
   return (
     <div class="reading-stack">
       <For each={props.card.onReadings}>
         {(reading) => <span class="reading-chip jp on">{reading.reading}</span>}
       </For>
       <For each={props.card.kunReadings}>
-        {(reading) => <span class="reading-chip jp kun">{reading.reading}</span>}
+        {(reading) => (
+          <span class="reading-chip jp kun">{reading.reading}</span>
+        )}
       </For>
       <For each={props.card.otherReadings}>
         {(reading) => <span class="reading-chip jp">{reading.reading}</span>}
@@ -191,26 +200,41 @@ function ReadingStack(props: { card: ReturnType<typeof createSrsReviewCardViewMo
   );
 }
 
-function AnswerPanel(props: { card: ReturnType<typeof createSrsReviewCardViewModel> }) {
+function AnswerPanel(props: {
+  card: ReturnType<typeof createSrsReviewCardViewModel>;
+}) {
   return (
     <div class="answer-panel">
       <div class="answer-grid">
-        <div class="answer-label">{props.card.isRecognition ? "Meaning" : "Kanji"}</div>
+        <div class="answer-label">
+          {props.card.isRecognition ? "Meaning" : "Kanji"}
+        </div>
         <div class={`answer-value ${props.card.isRecognition ? "" : "big jp"}`}>
           {props.card.isRecognition ? props.card.meaning : props.card.literal}
         </div>
         <div class="answer-label">Onyomi</div>
-        <div class="answer-value jp">{props.card.onReadings.map((reading) => reading.reading).join(", ") || "None"}</div>
+        <div class="answer-value jp">
+          {props.card.onReadings.map((reading) => reading.reading).join(", ") ||
+            "None"}
+        </div>
         <div class="answer-label">Kunyomi</div>
-        <div class="answer-value jp">{props.card.kunReadings.map((reading) => reading.reading).join(", ") || "None"}</div>
+        <div class="answer-value jp">
+          {props.card.kunReadings
+            .map((reading) => reading.reading)
+            .join(", ") || "None"}
+        </div>
         <div class="answer-label">Examples</div>
         <div class="answer-value">
-          <Show when={props.card.words.length > 0} fallback="No examples imported.">
+          <Show
+            when={props.card.words.length > 0}
+            fallback="No examples imported."
+          >
             <For each={props.card.words.slice(0, 4)}>
               {(word) => (
                 <div>
                   <span class="jp">{word.expression}</span>{" "}
-                  <span class="dim jp">{word.reading ?? "Unknown"}</span> - {word.meaning ?? "Unknown"}
+                  <span class="dim jp">{word.reading ?? "Unknown"}</span> -{" "}
+                  {word.meaning ?? "Unknown"}
                 </div>
               )}
             </For>

@@ -4,22 +4,24 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 
 ## Tech debt 
 - [ ] T-10000 Explore simplifications for backend, Tanstack etc
+- [x] T-10100 Out of order: full review of existing codebase - see docs/review*.md
+- [ ] T-10200 At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
 
 ## Meta work
-- [ ] T-20000 Clean up Phase 1 task list
+- [x] T-20000 Clean up Phase 1 task list
 
 ## Next up
 - [x] T-30000a load a single kanji with all readings.
 - [x] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
-- [x] T-30049 Out of order: full review of existing codebase - see docs/review*.md
-- [ ] T-30050 At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
 - [x] T-30100 Search - see docs/30100-search for details
-- [ ] T-30200 Simple @docs/30200-srs/srs-plan.md 
+- T-30200 SRS @docs/30200-srs/srs-plan.md 
 - [x] T-30200a Round 1 SRS Core
 - [x] T-30200b Round 2 Anki importer
 - [x] T-30200c Round 3 UI & endpoints
-- [ ] T-30250 Backups
-- [ ] T-30300 Import Anki status?
+- [ ] T-30200d run importer
+- [ ] T-30200e tune UI - see bugs.md
+- [ ] T-30200f see status of all cards in editor grid
+- [ ] T-30300 Backups
 - [ ] T-30400 Add example sentences. Following deleted non-words could go in examples
 ```json
      {

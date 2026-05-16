@@ -1,10 +1,13 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import type { IncomingMessage } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import { Readable } from "node:stream";
 
 import { createApp } from "./app.js";
+import { createHttpServer, createWebRequestFromIncomingMessage } from "./http.js";
 import {
   type Db,
   enableKanjiSrs,
@@ -130,6 +133,20 @@ function seedSearchData(db: Db) {
   });
 }
 
+function createJsonIncomingMessage(pathname: string, body: unknown): IncomingMessage {
+  const jsonBody = JSON.stringify(body);
+  const req = Readable.from([jsonBody]) as IncomingMessage;
+
+  req.method = "POST";
+  req.url = pathname;
+  req.headers = {
+    "content-type": "application/json",
+    "content-length": String(Buffer.byteLength(jsonBody)),
+  };
+
+  return req;
+}
+
 describe("server app", () => {
   test("reports health", async () => {
     const app = createApp();
@@ -145,7 +162,7 @@ describe("server app", () => {
     const body = await response.json();
 
     assert.equal(response.status, 200);
-    assert.equal(body.review.dueCount, 12);
+    assert.equal(body.review.dueCount, 0);
     assert.equal(body.latestSource.title, "Lesson 12");
   });
 
@@ -449,6 +466,62 @@ describe("server app", () => {
       assert.equal(disableResponse.status, 200);
       assert.equal(disableBody.enabled, false);
       assert.deepEqual(db.prepare("select count(*) as count from srs_reviews").get(), { count: 1 });
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("runs pending migrations when creating the HTTP server", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-kanji-srs-migrate-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedKanjiDetail(db, tempDir);
+      db.exec(`
+        drop table srs_import_links;
+        drop table srs_reviews;
+        drop table srs_cards;
+        delete from schema_migrations where id = '004_srs.sql';
+      `);
+      createHttpServer({ db, mediaRoot: tempDir });
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(
+        new Request("http://localhost/api/kanji/%E5%85%B7/srs", {
+          method: "POST",
+          body: JSON.stringify({ enabled: true }),
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.enabled, true);
+      assert.equal(body.cards.length, 2);
+      assert.deepEqual(db.prepare("select count(*) as count from srs_cards").get(), { count: 2 });
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("forwards JSON POST bodies through the HTTP request adapter", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-http-post-body-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedKanjiDetail(db, tempDir);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const request = await createWebRequestFromIncomingMessage(
+        createJsonIncomingMessage("/api/kanji/%E5%85%B7/srs", { enabled: true }),
+        "http://localhost",
+      );
+      const response = await app(request);
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.equal(body.enabled, true);
+      assert.equal(body.cards.length, 2);
     } finally {
       db.close();
       rmSync(tempDir, { recursive: true, force: true });
