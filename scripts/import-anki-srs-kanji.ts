@@ -132,6 +132,7 @@ export type ImportAnkiSrsKanjiSummary = {
   };
   proposedCount: number;
   importedCount: number;
+  disabledStaleCount: number;
   skippedCards: SkippedAnkiSrsKanjiCard[];
   proposedCards: ProposedAnkiSrsKanjiCard[];
 };
@@ -339,6 +340,18 @@ function dueAtFromAnki(card: AnkiCardRow, collectionCreatedAtSeconds: number, no
   return now;
 }
 
+function enabledFromAnki(card: AnkiCardRow) {
+  if (card.queue === -1) {
+    return false;
+  }
+
+  if (card.queue === 0 && card.type === 0) {
+    return false;
+  }
+
+  return true;
+}
+
 function easeFactorFromAnki(factor: number) {
   return factor === 0 ? defaultEaseFactor : factor / 1000;
 }
@@ -406,7 +419,7 @@ function collectImportableCards(params: {
       continue;
     }
 
-    const enabled = card.queue !== -1;
+    const enabled = enabledFromAnki(card);
     const state = stateFromAnki(card);
     const cardState: Omit<SrsCard, "createdAt" | "updatedAt"> = {
       id: buildSrsCardId(kanjiLiteral, cardKind),
@@ -506,7 +519,27 @@ function applyImport(params: {
       });
     }
 
-    return params.cards.length;
+    if (params.cards.length === 0) {
+      return { importedCount: 0, disabledStaleCount: 0 };
+    }
+
+    const importedCardIds = params.cards.map((card) => card.cardState.id);
+    const placeholders = importedCardIds.map(() => "?").join(", ");
+    const disabledStaleCount = params.appDb
+      .prepare(
+        `
+        update srs_cards
+        set
+          enabled = 0,
+          updated_at = ?
+        where card_kind in ('kanji_recognition', 'kanji_production')
+          and enabled = 1
+          and id not in (${placeholders})
+        `,
+      )
+      .run(params.now, ...importedCardIds).changes;
+
+    return { importedCount: params.cards.length, disabledStaleCount };
   });
 
   return importCards();
@@ -536,6 +569,7 @@ export async function importAnkiSrsKanji(options: ImportAnkiSrsKanjiOptions = {}
     });
     let backupPath: string | null = null;
     let importedCount = 0;
+    let disabledStaleCount = 0;
 
     if (options.apply) {
       backupPath = await backupSqliteDatabase({
@@ -548,12 +582,14 @@ export async function importAnkiSrsKanji(options: ImportAnkiSrsKanjiOptions = {}
 
       try {
         runMigrations(appDb);
-        importedCount = applyImport({
+        const applySummary = applyImport({
           appDb,
           cards: importable,
           collectionPath,
           now,
         });
+        importedCount = applySummary.importedCount;
+        disabledStaleCount = applySummary.disabledStaleCount;
       } finally {
         appDb.close();
       }
@@ -572,6 +608,7 @@ export async function importAnkiSrsKanji(options: ImportAnkiSrsKanjiOptions = {}
       ankiCounts: countCards(ankiCards, skipped.length),
       proposedCount: importable.length,
       importedCount,
+      disabledStaleCount,
       skippedCards: skipped,
       proposedCards: importable.map(toProposedCard),
     };

@@ -91,6 +91,7 @@
   - Convert Anki `factor` integer to Amika `ease_factor` decimal by dividing by `1000`; if `factor = 0` on learning/new cards, seed Amika's default ease.
   - Copy `ivl` to `interval_days`, `reps` to `reps`, and `lapses` to `lapses`.
   - Preserve the original Anki values in `srs_import_links` or a dry-run report so import decisions are auditable.
+  - Anki new-card `due` values are queue positions, not absolute due times. Until Amika has daily caps/new-card introduction semantics, imported `queue = 0` cards should not be enabled as immediately due cards.
 - Initial importer behavior:
   - Require Anki to be closed. Refuse to run if the profile appears active or if `collection.anki2-wal` is present.
   - Start as a read-only dry-run that reports deck match, card counts, skipped cards, and proposed Amika card state changes.
@@ -110,7 +111,7 @@
   - Sort due cards before new cards.
   - New cards should have `due_at` set to creation time so they are available immediately, but still sort after due/overdue review cards.
   - Interleave recognition and production naturally in the queue.
-  - No daily caps for T-30200.
+  - No daily caps for T-30200. Follow-up work should add daily caps/new-card introduction before imported Anki `new` cards are actively offered.
   - No sibling burying for T-30200; recognition and production for the same kanji may both appear in one session.
 - Due-time semantics:
   - Use a simple timezone-safe approach: store `due_at` as an absolute UTC timestamp.

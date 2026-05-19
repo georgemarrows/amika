@@ -169,7 +169,7 @@ describe("Anki kanji SRS importer", () => {
             sourceCardId: "100",
             kanjiLiteral: "具",
             cardKind: "kanji_production",
-            enabled: true,
+            enabled: false,
             state: "new",
             dueAt: "2026-05-16T10:00:00.000Z",
             intervalDays: 0,
@@ -240,6 +240,68 @@ describe("Anki kanji SRS importer", () => {
         now: "2026-05-16T10:00:00.000Z",
         backupDir: join(tempDir, "backups"),
       });
+      const seededDb = openDatabase({ path: dbPath });
+
+      try {
+        seededDb
+          .prepare(
+            `
+            insert into kanji (
+              literal,
+              primary_meaning,
+              stroke_count,
+              stroke_order_media_id,
+              frequency_rank,
+              usefulness,
+              source_record_id,
+              created_at,
+              updated_at
+            )
+            values ('見', 'see', null, null, null, null, null, '2026-05-16T10:00:00.000Z', '2026-05-16T10:00:00.000Z')
+            `,
+          )
+          .run();
+        seededDb
+          .prepare(
+            `
+            insert into srs_cards (
+              id,
+              kanji_literal,
+              card_kind,
+              enabled,
+              scheduler_version,
+              state,
+              due_at,
+              interval_days,
+              ease_factor,
+              reps,
+              lapses,
+              last_reviewed_at,
+              created_at,
+              updated_at
+            )
+            values (
+              'stale-local-card',
+              '見',
+              'kanji_production',
+              1,
+              'simple_sm2_v1',
+              'review',
+              '2026-05-16T09:00:00.000Z',
+              1,
+              2.5,
+              1,
+              0,
+              null,
+              '2026-05-16T10:00:00.000Z',
+              '2026-05-16T10:00:00.000Z'
+            )
+            `,
+          )
+          .run();
+      } finally {
+        seededDb.close();
+      }
       const ankiDb = new DatabaseConstructor(collectionPath);
 
       try {
@@ -298,11 +360,15 @@ describe("Anki kanji SRS importer", () => {
         assert.equal(first.importedCount, 3);
         assert.equal(first.backupPath, null);
         assert.equal(second.importedCount, 3);
+        assert.equal(second.disabledStaleCount, 1);
         assert.ok(second.backupPath);
         assert.equal(existsSync(second.backupPath), true);
-        assert.deepEqual(appDb.prepare("select count(*) as count from srs_cards").get(), { count: 3 });
+        assert.deepEqual(appDb.prepare("select count(*) as count from srs_cards").get(), { count: 4 });
         assert.deepEqual(appDb.prepare("select count(*) as count from srs_import_links").get(), { count: 3 });
-        assert.deepEqual(appDb.prepare("select count(*) as count from kanji").get(), { count: 2 });
+        assert.deepEqual(appDb.prepare("select count(*) as count from kanji").get(), { count: 3 });
+        assert.deepEqual(appDb.prepare("select enabled from srs_cards where id = 'stale-local-card'").get(), {
+          enabled: 0,
+        });
         assert.deepEqual(recognition, {
           kanji_literal: "具",
           card_kind: "kanji_recognition",

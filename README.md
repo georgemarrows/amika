@@ -121,7 +121,7 @@ Apply the import:
 bun run import:anki-srs-kanji -- --apply
 ```
 
-On `--apply`, the importer runs migrations, creates a verified backup when `.var/amika.sqlite` already exists, upserts kanji stubs if needed, replaces current SRS state for imported KanjiDamage cards, and records Anki provenance in `srs_import_links`. The default source profile is `/Users/georgem/Library/Application Support/Anki2/User 1/collection.anki2`; override it with `--collection`.
+On `--apply`, the importer runs migrations, creates a verified backup when `.var/amika.sqlite` already exists, upserts kanji stubs if needed, replaces current SRS state for imported KanjiDamage cards, disables stale local kanji SRS cards that are not present in the Anki import, and records Anki provenance in `srs_import_links`. Imported Anki new cards stay disabled because Anki's new-card `due` value is an introduction position, not an absolute due time; daily new-card limits/introduction belong in follow-up scheduler work. The default source profile is `/Users/georgem/Library/Application Support/Anki2/User 1/collection.anki2`; override it with `--collection`.
 
 ## Repair Imported Kanji Damage Data
 
