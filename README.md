@@ -107,7 +107,7 @@ sqlite3 .var/amika.sqlite "select 'kanji', count(*) from kanji union all select 
 
 Anki remains the source of truth until SRS cutover. The importer seeds Amika `srs_cards` from the local `_Work / KLC` deck without importing Anki's note/card template model as Amika runtime state.
 
-Close Anki before running the importer. The command refuses to read an active profile when `collection.anki2-wal` is present.
+Close Anki before running the importer. The command refuses to read an active profile when `collection.anki2-wal` contains pending WAL frames; a zero-byte stale WAL left after shutdown is allowed.
 
 Preview the proposed import without changing `.var/amika.sqlite`:
 

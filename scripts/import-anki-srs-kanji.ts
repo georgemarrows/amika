@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -162,16 +163,15 @@ function displayDeckName(name: string) {
 function assertInactiveCollection(collectionPath: string) {
   const walPath = `${collectionPath}-wal`;
 
-  if (existsSync(walPath)) {
+  if (existsSync(walPath) && statSync(walPath).size > 0) {
     throw new Error(`Refusing to import from active Anki profile; close Anki first and remove WAL: ${walPath}`);
   }
 }
 
 function readDeck(ankiDb: SqliteDatabase, deckName: string): AnkiDeckRow {
   const normalizedDeckName = normalizeDeckName(deckName);
-  const deck = ankiDb
-    .prepare("select id, name from decks where name = ?")
-    .get(normalizedDeckName) as AnkiDeckRow | undefined;
+  const decks = ankiDb.prepare("select id, name from decks").all() as AnkiDeckRow[];
+  const deck = decks.find((row) => row.name === normalizedDeckName);
 
   if (!deck) {
     throw new Error(`Anki deck not found: ${displayDeckName(normalizedDeckName)}`);
@@ -190,10 +190,26 @@ function readCollectionCreatedAt(ankiDb: SqliteDatabase) {
   return row.crt;
 }
 
-function readFieldsByNotetype(ankiDb: SqliteDatabase) {
-  const rows = ankiDb
-    .prepare("select ntid, ord, name from fields order by ntid, ord")
-    .all() as AnkiFieldRow[];
+function readAnkiRowsWithSqliteCli<T>(collectionPath: string, sql: string): T[] {
+  const output = execFileSync("sqlite3", ["-readonly", "-json", collectionPath, sql], {
+    encoding: "utf8",
+  }).trim();
+
+  return output ? (JSON.parse(output) as T[]) : [];
+}
+
+function readFieldsByNotetype(ankiDb: SqliteDatabase, collectionPath: string) {
+  let rows: AnkiFieldRow[];
+
+  try {
+    rows = ankiDb.prepare("select ntid, ord, name from fields order by ntid, ord").all() as AnkiFieldRow[];
+  } catch {
+    rows = readAnkiRowsWithSqliteCli<AnkiFieldRow>(
+      collectionPath,
+      "select ntid, ord, name from fields order by ntid, ord",
+    );
+  }
+
   const byNotetype = new Map<number, AnkiFieldRow[]>();
 
   for (const row of rows) {
@@ -205,10 +221,18 @@ function readFieldsByNotetype(ankiDb: SqliteDatabase) {
   return byNotetype;
 }
 
-function readTemplatesByNotetype(ankiDb: SqliteDatabase) {
-  const rows = ankiDb
-    .prepare("select ntid, ord, name from templates order by ntid, ord")
-    .all() as AnkiTemplateRow[];
+function readTemplatesByNotetype(ankiDb: SqliteDatabase, collectionPath: string) {
+  let rows: AnkiTemplateRow[];
+
+  try {
+    rows = ankiDb.prepare("select ntid, ord, name from templates order by ntid, ord").all() as AnkiTemplateRow[];
+  } catch {
+    rows = readAnkiRowsWithSqliteCli<AnkiTemplateRow>(
+      collectionPath,
+      "select ntid, ord, name from templates order by ntid, ord",
+    );
+  }
+
   const byNotetype = new Map<number, Map<number, AnkiTemplateRow>>();
 
   for (const row of rows) {
@@ -504,8 +528,8 @@ export async function importAnkiSrsKanji(options: ImportAnkiSrsKanjiOptions = {}
     const ankiCards = readCardsForDeck(ankiDb, String(deck.id));
     const { importable, skipped } = collectImportableCards({
       ankiCards,
-      fieldsByNotetype: readFieldsByNotetype(ankiDb),
-      templatesByNotetype: readTemplatesByNotetype(ankiDb),
+      fieldsByNotetype: readFieldsByNotetype(ankiDb, collectionPath),
+      templatesByNotetype: readTemplatesByNotetype(ankiDb, collectionPath),
       deck,
       collectionCreatedAtSeconds,
       now,

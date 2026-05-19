@@ -18,7 +18,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [x] T-30200a Round 1 SRS Core
 - [x] T-30200b Round 2 Anki importer
 - [x] T-30200c Round 3 UI & endpoints
-- [ ] T-30200d run importer
+- [x] T-30200d run importer
 - [ ] T-30200e tune UI - see bugs.md
 - [ ] T-30200f see status of all cards in editor grid
 - [ ] T-30300 Backups

@@ -214,7 +214,7 @@ describe("Anki kanji SRS importer", () => {
 
     try {
       createAnkiFixture(collectionPath);
-      writeFileSync(`${collectionPath}-wal`, "");
+      writeFileSync(`${collectionPath}-wal`, "pending wal frames");
 
       await assert.rejects(
         () => importAnkiSrsKanji({ collectionPath, dbPath: join(tempDir, "amika.sqlite") }),
