@@ -1,5 +1,5 @@
 import type { KanjiSrsStatusResponse, SrsCardSummary } from "../../../shared/srs";
-import { labelState } from "./srs-review-view-model";
+import { labelSrsCardKind, labelSrsCardState } from "./srs-card-labels";
 
 export type KanjiSrsCardViewModel = {
   id: string;
@@ -28,8 +28,8 @@ export function createKanjiSrsViewModel(srs: KanjiSrsStatusResponse): KanjiSrsVi
 function toCardViewModel(card: SrsCardSummary): KanjiSrsCardViewModel {
   return {
     id: card.id,
-    label: card.cardKind === "kanji_recognition" ? "Recognition" : "Production",
-    stateLabel: card.enabled ? labelState(card.state) : "disabled",
+    label: labelSrsCardKind(card.cardKind),
+    stateLabel: card.enabled ? labelSrsCardState(card.state) : "disabled",
     dueLabel: formatDue(card.dueAt),
     enabled: card.enabled,
   };

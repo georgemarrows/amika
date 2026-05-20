@@ -356,6 +356,83 @@ describe("server app", () => {
     }
   });
 
+  test("returns SRS kanji matrix rows with card status", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "amika-srs-matrix-app-test-"));
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      seedSrsReviewData(db, tempDir);
+      const app = createApp({ db, mediaRoot: tempDir });
+      const response = await app(new Request("http://localhost/api/srs/cards/matrix"));
+      const body = await response.json();
+      const [item] = body.items;
+
+      assert.equal(response.status, 200);
+      assert.match(body.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+      assert.equal(body.items.length, 1);
+      assert.equal(item.kanjiLiteral, "具");
+      assert.equal(item.meaning, "tool");
+      assert.equal(item.nextDueAt, "2026-05-16T10:00:00.000Z");
+      assert.equal(item.nextDueStatus, "overdue");
+      assert.deepEqual(
+        { ...item.recognition, id: "stable-card-id" },
+        {
+          id: "stable-card-id",
+          kanjiLiteral: "具",
+          cardKind: "kanji_recognition",
+          enabled: true,
+          schedulerVersion: "simple_sm2_v1",
+          state: "new",
+          dueAt: "2026-05-16T10:00:00.000Z",
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reps: 0,
+          lapses: 0,
+          lastReviewedAt: null,
+        },
+      );
+      assert.deepEqual(
+        { ...item.production, id: "stable-card-id" },
+        {
+          id: "stable-card-id",
+          kanjiLiteral: "具",
+          cardKind: "kanji_production",
+          enabled: true,
+          schedulerVersion: "simple_sm2_v1",
+          state: "new",
+          dueAt: "2026-05-16T10:00:00.000Z",
+          intervalDays: 0,
+          easeFactor: 2.5,
+          reps: 0,
+          lapses: 0,
+          lastReviewedAt: null,
+        },
+      );
+      assert.equal(item.totalReps, 0);
+      assert.equal(item.totalLapses, 0);
+    } finally {
+      db.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns an empty SRS kanji matrix when no cards exist", async () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      const app = createApp({ db });
+      const response = await app(new Request("http://localhost/api/srs/cards/matrix"));
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(body.items, []);
+      assert.match(body.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
+    } finally {
+      db.close();
+    }
+  });
+
   test("submits an SRS review and returns the next card", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "amika-srs-submit-app-test-"));
     const db = openDatabase({ path: ":memory:" });

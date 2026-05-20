@@ -35,6 +35,10 @@ type SrsReviewDbRow = {
   next_state_json: string;
 };
 
+type SrsKanjiMatrixDbRow = SrsCardDbRow & {
+  primary_meaning: string;
+};
+
 export type SrsReviewInsertInput = {
   id: string;
   cardId: string;
@@ -75,6 +79,16 @@ export type SrsImportLinkInput = {
   sourceNotetypeId: string | null;
   sourceTemplateName: string | null;
   importedAt: string;
+};
+
+export type SrsKanjiMatrixRow = {
+  kanjiLiteral: string;
+  meaning: string;
+  nextDueAt: string | null;
+  recognition: SrsCard | null;
+  production: SrsCard | null;
+  totalReps: number;
+  totalLapses: number;
 };
 
 const kanjiCardKinds: SrsCardKind[] = ["kanji_recognition", "kanji_production"];
@@ -280,6 +294,94 @@ export function countDueSrsCards(db: Db, now: string): number {
 
 export function getNextDueSrsCard(db: Db, now: string): SrsCard | null {
   return listDueSrsCards(db, now, 1)[0] ?? null;
+}
+
+export function listSrsKanjiMatrixRows(db: Db, now: string): SrsKanjiMatrixRow[] {
+  const grouped = new Map<string, SrsKanjiMatrixRow>();
+  const rows = db
+    .prepare(
+      `
+      select
+        srs_cards.id,
+        srs_cards.kanji_literal,
+        srs_cards.card_kind,
+        srs_cards.enabled,
+        srs_cards.scheduler_version,
+        srs_cards.state,
+        srs_cards.due_at,
+        srs_cards.interval_days,
+        srs_cards.ease_factor,
+        srs_cards.reps,
+        srs_cards.lapses,
+        srs_cards.last_reviewed_at,
+        srs_cards.created_at,
+        srs_cards.updated_at,
+        kanji.primary_meaning
+      from srs_cards
+      inner join kanji on kanji.literal = srs_cards.kanji_literal
+      where srs_cards.card_kind in ('kanji_recognition', 'kanji_production')
+      order by srs_cards.kanji_literal, srs_cards.card_kind
+      `,
+    )
+    .all() as SrsKanjiMatrixDbRow[];
+
+  for (const row of rows) {
+    const card = toSrsCard(row);
+    const existing = grouped.get(card.kanjiLiteral) ?? {
+      kanjiLiteral: card.kanjiLiteral,
+      meaning: row.primary_meaning,
+      nextDueAt: null,
+      recognition: null,
+      production: null,
+      totalReps: 0,
+      totalLapses: 0,
+    };
+
+    if (card.cardKind === "kanji_recognition") {
+      existing.recognition = card;
+    } else {
+      existing.production = card;
+    }
+
+    existing.totalReps += card.reps;
+    existing.totalLapses += card.lapses;
+
+    if (card.enabled && (!existing.nextDueAt || card.dueAt < existing.nextDueAt)) {
+      existing.nextDueAt = card.dueAt;
+    }
+
+    grouped.set(card.kanjiLiteral, existing);
+  }
+
+  return [...grouped.values()].sort((left, right) => {
+    const bucketDiff = matrixSortBucket(left, now) - matrixSortBucket(right, now);
+
+    if (bucketDiff !== 0) {
+      return bucketDiff;
+    }
+
+    if (left.nextDueAt && right.nextDueAt && left.nextDueAt !== right.nextDueAt) {
+      return left.nextDueAt.localeCompare(right.nextDueAt);
+    }
+
+    if (left.nextDueAt && !right.nextDueAt) {
+      return -1;
+    }
+
+    if (!left.nextDueAt && right.nextDueAt) {
+      return 1;
+    }
+
+    return left.kanjiLiteral.localeCompare(right.kanjiLiteral);
+  });
+}
+
+function matrixSortBucket(row: SrsKanjiMatrixRow, now: string) {
+  if (!row.nextDueAt) {
+    return 2;
+  }
+
+  return row.nextDueAt <= now ? 0 : 1;
 }
 
 export function upsertImportedSrsCard(db: Db, input: SrsCardImportInput): SrsCard {

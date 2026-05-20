@@ -20,7 +20,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [x] T-30200c Round 3 UI & endpoints
 - [x] T-30200d run importer
 - [ ] T-30200e tune UI - see bugs.md
-- [ ] T-30200f see status of all cards in editor grid
+- [x] T-30200f see status of all cards in editor grid
 - [ ] T-30300 Backups
 - [ ] T-30400 Add example sentences. Following deleted non-words could go in examples
 ```json

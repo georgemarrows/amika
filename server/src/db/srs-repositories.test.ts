@@ -8,6 +8,7 @@ import {
   getSrsCardById,
   getSrsCardsForKanji,
   listDueSrsCards,
+  listSrsKanjiMatrixRows,
   openDatabase,
   runMigrations,
   updateSrsCardState,
@@ -198,6 +199,124 @@ describe("SRS repositories", () => {
       assert.deepEqual(
         getSrsCardsForKanji(db, "具").map((card) => card.cardKind),
         ["kanji_production", "kanji_recognition"],
+      );
+    } finally {
+      db.close();
+    }
+  });
+
+  test("lists grouped SRS matrix rows with disabled cards sorted last", () => {
+    const db = openDatabase({ path: ":memory:" });
+
+    try {
+      runMigrations(db);
+      seedKanji(db, "具");
+      seedKanji(db, "日");
+      seedKanji(db, "忘");
+      seedKanji(db, "未");
+      const [futureProduction, futureRecognition] = enableKanjiSrs(db, "具", "2026-05-20T10:00:00.000Z");
+      const [dueProduction, dueRecognition] = enableKanjiSrs(db, "日", "2026-05-16T08:00:00.000Z");
+      const [disabledProduction, disabledRecognition] = enableKanjiSrs(db, "忘", "2026-05-16T07:00:00.000Z");
+
+      updateSrsCardState(db, dueProduction.id, {
+        state: "review",
+        dueAt: "2026-05-16T08:00:00.000Z",
+        intervalDays: 3,
+        easeFactor: 2.5,
+        reps: 4,
+        lapses: 1,
+        lastReviewedAt: "2026-05-13T08:00:00.000Z",
+        updatedAt: now,
+      });
+      updateSrsCardState(db, dueRecognition.id, {
+        state: "review",
+        dueAt: "2026-05-17T08:00:00.000Z",
+        intervalDays: 4,
+        easeFactor: 2.5,
+        reps: 6,
+        lapses: 2,
+        lastReviewedAt: "2026-05-13T08:00:00.000Z",
+        updatedAt: now,
+      });
+      updateSrsCardState(db, futureProduction.id, {
+        state: "review",
+        dueAt: "2026-05-21T08:00:00.000Z",
+        intervalDays: 5,
+        easeFactor: 2.5,
+        reps: 8,
+        lapses: 0,
+        lastReviewedAt: "2026-05-13T08:00:00.000Z",
+        updatedAt: now,
+      });
+      updateSrsCardState(db, futureRecognition.id, {
+        state: "review",
+        dueAt: "2026-05-20T08:00:00.000Z",
+        intervalDays: 5,
+        easeFactor: 2.5,
+        reps: 7,
+        lapses: 1,
+        lastReviewedAt: "2026-05-13T08:00:00.000Z",
+        updatedAt: now,
+      });
+      updateSrsCardState(db, disabledProduction.id, {
+        state: "new",
+        dueAt: "2026-05-16T07:00:00.000Z",
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reps: 1,
+        lapses: 0,
+        lastReviewedAt: "2026-05-13T08:00:00.000Z",
+        updatedAt: now,
+      });
+      updateSrsCardState(db, disabledRecognition.id, {
+        state: "new",
+        dueAt: "2026-05-16T07:30:00.000Z",
+        intervalDays: 0,
+        easeFactor: 2.5,
+        reps: 2,
+        lapses: 0,
+        lastReviewedAt: "2026-05-13T08:00:00.000Z",
+        updatedAt: now,
+      });
+      disableKanjiSrs(db, "忘", now);
+
+      const rows = listSrsKanjiMatrixRows(db, now);
+
+      assert.deepEqual(
+        rows.map((row) => ({
+          literal: row.kanjiLiteral,
+          nextDueAt: row.nextDueAt,
+          recognitionKind: row.recognition?.cardKind,
+          productionKind: row.production?.cardKind,
+          totalReps: row.totalReps,
+          totalLapses: row.totalLapses,
+        })),
+        [
+          {
+            literal: "日",
+            nextDueAt: "2026-05-16T08:00:00.000Z",
+            recognitionKind: "kanji_recognition",
+            productionKind: "kanji_production",
+            totalReps: 10,
+            totalLapses: 3,
+          },
+          {
+            literal: "具",
+            nextDueAt: "2026-05-20T08:00:00.000Z",
+            recognitionKind: "kanji_recognition",
+            productionKind: "kanji_production",
+            totalReps: 15,
+            totalLapses: 1,
+          },
+          {
+            literal: "忘",
+            nextDueAt: null,
+            recognitionKind: "kanji_recognition",
+            productionKind: "kanji_production",
+            totalReps: 3,
+            totalLapses: 0,
+          },
+        ],
       );
     } finally {
       db.close();

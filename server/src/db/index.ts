@@ -30,6 +30,7 @@ export {
   getSrsCardsForKanji,
   insertSrsReview,
   listDueSrsCards,
+  listSrsKanjiMatrixRows,
   upsertImportedSrsCard,
   upsertSrsImportLink,
   updateSrsCardState,
@@ -58,5 +59,6 @@ export type {
   SrsCardStateUpdateInput,
   SrsCardImportInput,
   SrsImportLinkInput,
+  SrsKanjiMatrixRow,
   SrsReviewInsertInput,
 } from "./srs-repositories.js";

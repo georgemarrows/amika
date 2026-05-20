@@ -12,6 +12,8 @@ import type {
   SrsApiErrorCode,
   SrsApiErrorResponse,
   SrsCardSummary,
+  SrsDueStatus,
+  SrsKanjiMatrixResponse,
   SrsReviewCardResponse,
   SrsReviewQueueResponse,
   SrsReviewRating,
@@ -34,6 +36,7 @@ import {
   getSrsCardsForKanji,
   listKanji,
   listWords,
+  listSrsKanjiMatrixRows,
   openDatabase,
   searchLibrary,
   type Db,
@@ -316,6 +319,37 @@ function toReviewQueueResponse(db: Db, now: string): SrsReviewQueueResponse {
   };
 }
 
+function toSrsKanjiMatrixResponse(db: Db, now: string): SrsKanjiMatrixResponse {
+  return {
+    generatedAt: now,
+    items: listSrsKanjiMatrixRows(db, now).map((item) => ({
+      kanjiLiteral: item.kanjiLiteral,
+      meaning: item.meaning,
+      nextDueAt: item.nextDueAt,
+      nextDueStatus: labelSrsDueStatus(item.nextDueAt, now),
+      recognition: item.recognition ? toSrsCardSummary(item.recognition) : null,
+      production: item.production ? toSrsCardSummary(item.production) : null,
+      totalReps: item.totalReps,
+      totalLapses: item.totalLapses,
+    })),
+  };
+}
+
+function labelSrsDueStatus(dueAt: string | null, now: string): SrsDueStatus {
+  if (!dueAt) {
+    return "disabled";
+  }
+
+  const due = new Date(dueAt);
+  const current = new Date(now);
+
+  if (due <= current) {
+    return due.toDateString() === current.toDateString() ? "due_now" : "overdue";
+  }
+
+  return due.toDateString() === current.toDateString() ? "today" : "future";
+}
+
 function toWordDetailResponse(word: WordDetailRow): WordDetailResponse {
   return {
     id: word.id,
@@ -376,6 +410,12 @@ async function serveKanji(literal: string, options: CreateAppOptions) {
 async function serveSrsReviewQueue(options: CreateAppOptions) {
   return withSrsRequestDb(options, (db) =>
     json(toReviewQueueResponse(db, new Date().toISOString())),
+  );
+}
+
+async function serveSrsKanjiMatrix(options: CreateAppOptions) {
+  return withSrsRequestDb(options, (db) =>
+    json(toSrsKanjiMatrixResponse(db, new Date().toISOString())),
   );
 }
 
@@ -553,6 +593,7 @@ export function createApp(options: CreateAppOptions = {}) {
 
   registerGet(app, "/api/search", (context) => serveSearch(context.req.query("q") ?? "", options));
   registerGet(app, "/api/srs/review", () => serveSrsReviewQueue(options));
+  registerGet(app, "/api/srs/cards/matrix", () => serveSrsKanjiMatrix(options));
   registerPost(app, "/api/srs/reviews", (context) => serveSrsReviewSubmit(context.req.raw, options));
   registerGet(app, "/api/kanji", () => serveKanjiList(options));
   registerGet(app, "/api/kanji/:literal", (context) => serveKanji(context.req.param("literal") ?? "", options));

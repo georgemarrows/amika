@@ -5,6 +5,7 @@ import {
   closeRightmostPane,
   createInitialPaneKeys,
   createPaneState,
+  describePane,
   openPane,
   openRootPane,
   willScrollToExistingPane,
@@ -41,7 +42,16 @@ describe("pane state", () => {
 
   test("opens root navigation as the whole pane stack", () => {
     expect(openRootPane("list-kanji")).toEqual(["list-kanji"]);
+    expect(openRootPane("srs-status")).toEqual(["srs-status"]);
     expect(openRootPane("home")).toEqual(["home"]);
+  });
+
+  test("describes the SRS status pane", () => {
+    expect(describePane("srs-status")).toEqual({
+      key: "srs-status",
+      title: "SRS card status",
+      pill: "SRS",
+    });
   });
 
   test("closes a selected pane but keeps at least one pane", () => {

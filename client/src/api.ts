@@ -4,6 +4,7 @@ import type { KanjiListResponse, WordListResponse } from "../../shared/library-l
 import type { SearchResponse } from "../../shared/search";
 import type {
   KanjiSrsStatusResponse,
+  SrsKanjiMatrixResponse,
   SrsReviewQueueResponse,
   SrsReviewRating,
   SrsReviewSubmitResponse,
@@ -75,6 +76,16 @@ export async function fetchSrsReviewQueue(): Promise<SrsReviewQueueResponse> {
 
   if (!response.ok) {
     throw new Error(`Failed to load SRS review queue: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchSrsKanjiMatrix(): Promise<SrsKanjiMatrixResponse> {
+  const response = await fetch("/api/srs/cards/matrix");
+
+  if (!response.ok) {
+    throw new Error(`Failed to load SRS card status: ${response.status}`);
   }
 
   return response.json();

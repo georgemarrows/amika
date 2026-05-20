@@ -17,6 +17,13 @@
   --color-srs: #c99a3a;
   --color-srs-bg: #3a2e18;
   --color-ok: #78b068;
+  --color-danger: #d98a8a;
+  --color-danger-bg: rgba(191, 95, 95, 0.12);
+  --color-danger-border: rgba(191, 95, 95, 0.45);
+  --color-ok-bg: rgba(120, 176, 104, 0.11);
+  --color-ok-border: rgba(120, 176, 104, 0.36);
+  --color-new-bg: rgba(134, 189, 223, 0.11);
+  --color-new-border: rgba(134, 189, 223, 0.36);
   --color-shadow: rgba(0, 0, 0, 0.5);
   --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-jp: "Hiragino Kaku Gothic ProN", "Noto Sans JP", -apple-system, sans-serif;
@@ -1090,6 +1097,132 @@ code,
   padding-top: var(--gap-xs);
   color: var(--color-dim);
   font-size: 12px;
+}
+
+.srs-status-shell {
+  display: grid;
+  gap: var(--gap-lg);
+}
+
+.srs-matrix-wrap {
+  overflow-x: auto;
+}
+
+.srs-matrix {
+  min-width: 720px;
+}
+
+.srs-matrix tr {
+  cursor: pointer;
+}
+
+.srs-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-xs);
+  border: 0;
+  background: transparent;
+  color: var(--color-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  padding: 0;
+  text-transform: uppercase;
+}
+
+.srs-sort:hover,
+.srs-sort.active {
+  color: var(--color-text);
+}
+
+.srs-sort-indicator {
+  color: var(--color-dimmer);
+  font-size: 9px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.srs-matrix-cell {
+  display: grid;
+  gap: 2px;
+  min-width: 134px;
+}
+
+.srs-matrix-chip {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: var(--gap-xs);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  padding: 3px 7px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.srs-matrix-chip::before {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-dim);
+  content: "";
+}
+
+.srs-matrix-chip.relearning {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.srs-matrix-chip.relearning::before {
+  background: var(--color-danger);
+}
+
+.srs-matrix-chip.learning {
+  border-color: color-mix(in srgb, var(--color-srs) 46%, var(--color-border));
+  background: var(--color-srs-bg);
+  color: var(--color-srs);
+}
+
+.srs-matrix-chip.learning::before {
+  background: var(--color-srs);
+}
+
+.srs-matrix-chip.review {
+  border-color: var(--color-ok-border);
+  background: var(--color-ok-bg);
+  color: var(--color-ok);
+}
+
+.srs-matrix-chip.review::before {
+  background: var(--color-ok);
+}
+
+.srs-matrix-chip.new {
+  border-color: var(--color-new-border);
+  background: var(--color-new-bg);
+  color: var(--color-search-word);
+}
+
+.srs-matrix-chip.new::before {
+  background: var(--color-search-word);
+}
+
+.srs-matrix-chip.disabled {
+  border-style: dashed;
+  color: var(--color-dimmer);
+}
+
+.srs-matrix-meta,
+.srs-matrix-load {
+  color: var(--color-dim);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .empty-state,

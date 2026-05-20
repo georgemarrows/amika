@@ -84,6 +84,9 @@ export function PaneShell(props: { state: HomePageData }) {
             <span>Review</span>
             <span class="badge">{srsState.dueCount()}</span>
           </button>
+          <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("srs-status")}>
+            Card status
+          </button>
           <button class="nav-item nav-item-dim" type="button" onClick={() => setSearchOpen(true)}>
             Search <span class="kbd">⌘K</span>
           </button>

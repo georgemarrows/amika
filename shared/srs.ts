@@ -39,6 +39,24 @@ export type KanjiSrsStatusResponse = {
   cards: SrsCardSummary[];
 };
 
+export type SrsDueStatus = "overdue" | "due_now" | "today" | "future" | "disabled";
+
+export type SrsKanjiMatrixItem = {
+  kanjiLiteral: string;
+  meaning: string;
+  nextDueAt: string | null;
+  nextDueStatus: SrsDueStatus;
+  recognition: SrsCardSummary | null;
+  production: SrsCardSummary | null;
+  totalReps: number;
+  totalLapses: number;
+};
+
+export type SrsKanjiMatrixResponse = {
+  generatedAt: string;
+  items: SrsKanjiMatrixItem[];
+};
+
 export type SrsReviewCardResponse = SrsCardSummary & {
   meaning: string;
   readings: KanjiReading[];

@@ -1,4 +1,11 @@
-import { For, Match, Show, Switch, createResource, createSignal } from "solid-js";
+import {
+  For,
+  Match,
+  Show,
+  Switch,
+  createResource,
+  createSignal,
+} from "solid-js";
 
 import { fetchKanjiDetail, setKanjiSrsEnabled } from "../api";
 import { createKanjiDetailViewModel } from "../models/kanji-detail-view-model";
@@ -11,7 +18,10 @@ export function KanjiPane(props: {
   paneIndex: number;
   openFromPane: OpenFromPane;
 }) {
-  const [detail, { mutate }] = createResource(() => props.literal, fetchKanjiDetail);
+  const [detail, { mutate }] = createResource(
+    () => props.literal,
+    fetchKanjiDetail,
+  );
   const [srsPending, setSrsPending] = createSignal(false);
   const [srsError, setSrsError] = createSignal<string | null>(null);
 
@@ -30,7 +40,9 @@ export function KanjiPane(props: {
       props.srsState.setDueCount(srs.dueCount);
       mutate({ ...current, srs });
     } catch (error) {
-      setSrsError(error instanceof Error ? error.message : "SRS status update failed.");
+      setSrsError(
+        error instanceof Error ? error.message : "SRS status update failed.",
+      );
     } finally {
       setSrsPending(false);
     }
@@ -86,7 +98,9 @@ export function KanjiPane(props: {
                   <div class="kanji-srs-card-list">
                     <For each={model.srs.cards}>
                       {(card) => (
-                        <div class={`kanji-srs-card ${card.enabled ? "enabled" : "disabled"}`}>
+                        <div
+                          class={`kanji-srs-card ${card.enabled ? "enabled" : "disabled"}`}
+                        >
                           <span>{card.label}</span>
                           <span>{card.stateLabel}</span>
                           <span>{card.dueLabel}</span>

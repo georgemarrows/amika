@@ -7,6 +7,7 @@ export type PaneKey =
   | `kanji:${string}`
   | `word:${string}`
   | "review"
+  | "srs-status"
   | "list-kanji"
   | "list-words";
 
@@ -76,6 +77,10 @@ export function describePane(key: PaneKey): PaneDescriptor {
 
   if (key === "review") {
     return { key, title: "Today's review", pill: "SRS" };
+  }
+
+  if (key === "srs-status") {
+    return { key, title: "SRS card status", pill: "SRS" };
   }
 
   if (key === "list-kanji") {

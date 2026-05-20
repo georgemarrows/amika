@@ -1,5 +1,6 @@
 import type { KanjiReading } from "../../../shared/kanji-reading";
 import type { SrsCardKind, SrsReviewCardResponse } from "../../../shared/srs";
+import { labelSrsCardKind, labelSrsCardState } from "./srs-card-labels";
 
 export type SrsReviewRatingViewModel = {
   id: "again" | "hard" | "good" | "easy";
@@ -35,8 +36,8 @@ export function createSrsReviewCardViewModel(card: SrsReviewCardResponse): SrsRe
     id: card.id,
     literal: card.kanjiLiteral,
     kind: card.cardKind,
-    kindLabel: isRecognition ? "Recognition" : "Production",
-    stateLabel: `${labelState(card.state)} · due now`,
+    kindLabel: labelSrsCardKind(card.cardKind),
+    stateLabel: `${labelSrsCardState(card.state)} · due now`,
     meaning: card.meaning,
     onReadings: card.readings.filter((reading) => reading.type === "on"),
     kunReadings: card.readings.filter((reading) => reading.type === "kun"),
@@ -47,17 +48,4 @@ export function createSrsReviewCardViewModel(card: SrsReviewCardResponse): SrsRe
       : "Produce the kanji from the meaning and readings.",
     isRecognition,
   };
-}
-
-export function labelState(state: SrsReviewCardResponse["state"]) {
-  switch (state) {
-    case "new":
-      return "new";
-    case "learning":
-      return "learning";
-    case "review":
-      return "review";
-    case "relearning":
-      return "relearning";
-  }
 }

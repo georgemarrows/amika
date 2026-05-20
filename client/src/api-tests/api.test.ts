@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 
 import {
   fetchSearchResults,
+  fetchSrsKanjiMatrix,
   fetchSrsReviewQueue,
   setKanjiSrsEnabled,
   submitSrsReview,
@@ -66,6 +67,35 @@ describe("api", () => {
       generatedAt: "2026-05-16T10:00:00.000Z",
     });
     expect(requestedUrl).toBe("/api/srs/review");
+  });
+
+  test("fetches the SRS kanji matrix", async () => {
+    let requestedUrl = "";
+
+    globalThis.fetch = ((input: RequestInfo | URL) => {
+      requestedUrl = String(input);
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            generatedAt: "2026-05-16T10:00:00.000Z",
+            items: [],
+          }),
+          { status: 200 },
+        ),
+      );
+    }) as unknown as typeof fetch;
+
+    await expect(fetchSrsKanjiMatrix()).resolves.toEqual({
+      generatedAt: "2026-05-16T10:00:00.000Z",
+      items: [],
+    });
+    expect(requestedUrl).toBe("/api/srs/cards/matrix");
+  });
+
+  test("throws when SRS kanji matrix fails to load", async () => {
+    globalThis.fetch = (() => Promise.resolve(new Response("Nope", { status: 503 }))) as unknown as typeof fetch;
+
+    await expect(fetchSrsKanjiMatrix()).rejects.toThrow("Failed to load SRS card status: 503");
   });
 
   test("submits SRS reviews as JSON", async () => {
