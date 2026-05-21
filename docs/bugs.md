@@ -21,6 +21,13 @@ SRS
 - [ ] link words to word cards for better exploration
 - [ ] stroke order diagrams on kanji cards
 
+SRS browse
+- [x] width of pane
+- [x] various small layout issues
+- [x] unnecessary repetition of "review"
+- [ ] 究 recognition card missing, also others
+- [ ] 128 days -> months, years, etc
+
 Code review
 - [ ] clean up repetitiion in api.ts
 - [x] clean up branching in app.ts createApp. Should we be using a lightweight router? Nest.js??

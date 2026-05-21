@@ -98,7 +98,7 @@ function createCardCell(card: SrsCardSummary | null, now: Date): SrsStatusCardCe
   const dueLabel = labelDue(due, now);
 
   return {
-    label: `${labelSrsCardState(card.state)} · ${dueLabel}`,
+    label: `${labelSrsCardState(card.state)} ${dueLabel}`,
     tone: toneForCard(card, due, now),
     sortValue: due.getTime(),
     meta: `${card.reps} reps · ${card.lapses} lapses`,

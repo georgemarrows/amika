@@ -51,6 +51,7 @@ describe("pane state", () => {
       key: "srs-status",
       title: "SRS card status",
       pill: "SRS",
+      className: "srs-status-pane",
     });
   });
 

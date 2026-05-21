@@ -80,7 +80,7 @@ export function describePane(key: PaneKey): PaneDescriptor {
   }
 
   if (key === "srs-status") {
-    return { key, title: "SRS card status", pill: "SRS" };
+    return { key, title: "SRS card status", pill: "SRS", className: "srs-status-pane" };
   }
 
   if (key === "list-kanji") {

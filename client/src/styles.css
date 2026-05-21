@@ -31,6 +31,7 @@
   --size-sidebar-width: 220px;
   --size-pane-width: 520px;
   --size-home-pane-width: 560px;
+  --size-srs-status-pane-width: 980px;
   --size-pane-padding-x: 32px;
   --size-pane-padding-top: 24px;
   --size-pane-padding-bottom: 48px;
@@ -202,6 +203,11 @@ code,
 .pane.home {
   width: var(--size-home-pane-width);
   min-width: var(--size-home-pane-width);
+}
+
+.pane.srs-status-pane {
+  width: min(var(--size-srs-status-pane-width), calc(100vw - var(--size-sidebar-width)));
+  min-width: min(var(--size-srs-status-pane-width), calc(100vw - var(--size-sidebar-width)));
 }
 
 .pane-scroll-flash {
@@ -1109,7 +1115,40 @@ code,
 }
 
 .srs-matrix {
-  min-width: 720px;
+  min-width: 860px;
+  table-layout: fixed;
+}
+
+.srs-matrix th {
+  text-align: left;
+  padding: 0 0 0.5em 0.5em;;
+}
+
+.srs-matrix th:nth-child(1),
+.srs-matrix td:nth-child(1) {
+  width: 72px;
+}
+
+.srs-matrix th:nth-child(2),
+.srs-matrix td:nth-child(2) {
+  width: 190px;
+}
+
+.srs-matrix th:nth-child(3),
+.srs-matrix td:nth-child(3) {
+  width: 128px;
+}
+
+.srs-matrix th:nth-child(4),
+.srs-matrix td:nth-child(4),
+.srs-matrix th:nth-child(5),
+.srs-matrix td:nth-child(5) {
+  width: 188px;
+}
+
+.srs-matrix th:nth-child(6),
+.srs-matrix td:nth-child(6) {
+  width: 116px;
 }
 
 .srs-matrix tr {
@@ -1125,11 +1164,8 @@ code,
   color: var(--color-dim);
   cursor: pointer;
   font: inherit;
-  font-size: 10px;
   font-weight: 650;
-  letter-spacing: 0.07em;
   padding: 0;
-  text-transform: uppercase;
 }
 
 .srs-sort:hover,
@@ -1171,6 +1207,7 @@ code,
   border-radius: 50%;
   background: var(--color-dim);
   content: "";
+  margin-right: 0.2em;
 }
 
 .srs-matrix-chip.relearning {

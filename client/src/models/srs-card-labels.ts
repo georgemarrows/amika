@@ -11,7 +11,7 @@ export function labelSrsCardState(state: SrsCardState) {
     case "learning":
       return "learning";
     case "review":
-      return "review";
+      return "";
     case "relearning":
       return "relearning";
   }
