@@ -13,6 +13,7 @@ import {
   type KanjiDetailViewModel,
 } from "../models/kanji-detail-view-model";
 import type { SrsUiState } from "../state/srs-ui-state";
+import { Columns } from "./helpers";
 import type { OpenFromPane } from "./pane-props";
 
 type KanjiSrsPanelProps = {
@@ -83,16 +84,20 @@ export function KanjiPane(props: {
 
           return (
             <>
-              <div class="hero">
-                <div class="glyph jp">{model.literal}</div>
-              </div>
-              <div class="kanji-meaning">{model.meaning}</div>
-              <KanjiSrsPanel
-                srs={model.srs}
-                pending={srsPending()}
-                error={srsError()}
-                onToggle={(enabled) => void toggleSrs(enabled)}
-              />
+              <Columns
+                gridTemplateColumns="auto 1fr"
+                alignItems="center"
+                gap="4rem"
+              >
+                <KanjiHeading literal={model.literal} meaning={model.meaning} />
+
+                <KanjiSrsPanel
+                  srs={model.srs}
+                  pending={srsPending()}
+                  error={srsError()}
+                  onToggle={(enabled) => void toggleSrs(enabled)}
+                />
+              </Columns>
               <KanjiReadingsSection readingGroups={model.readingGroups} />
               <KanjiMetadataSection metadata={model.metadata} />
               <KanjiStrokeOrderSection
@@ -116,6 +121,14 @@ export function KanjiPane(props: {
   );
 }
 
+function KanjiHeading(props: { literal: string; meaning: string }) {
+  return (
+    <div class="kanji-heading">
+      <div class="glyph jp">{props.literal}</div>
+      <div class="kanji-meaning">{props.meaning}</div>
+    </div>
+  );
+}
 
 function KanjiSrsHeader(props: {
   statusLabel: string;
