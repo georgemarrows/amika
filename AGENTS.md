@@ -34,3 +34,11 @@
 
 ## Client state
 - Prefer specialized state helper factories over exported singleton signals for shared UI state.
+
+
+## Solid components
+- Prefer extracting large JSX blocks into small, named local components instead of keeping dense markup inline in the pane component.
+- Pass typed callback props that describe UI intent, such as `openPane`, rather than threading broader app state through child components.
+- Prefer structured view-model data over preformatted strings when repeated UI fragments need consistent rendering.
+- Reuse small presentation components.
+- Keep feature-specific helper components local to the component file until they are reused elsewhere.

@@ -1,9 +1,10 @@
-import { For, Match, Switch, createMemo, createResource, createSignal } from "solid-js";
+import { Accessor, For, Match, Switch, createMemo, createResource, createSignal } from "solid-js";
 
 import { fetchSrsKanjiMatrix } from "../api";
 import {
   createSrsStatusRows,
   initialSrsStatusSort,
+  SrsStatusRowViewModel,
   SrsStatusStats,
   toggleSrsStatusSort,
   type SrsStatusCardCellViewModel,
@@ -11,6 +12,7 @@ import {
   type SrsStatusSortKey,
 } from "../models/srs-status-view-model";
 import type { OpenFromPane } from "./pane-props";
+import { PaneKey } from "../state/pane-state";
 
 export function SrsStatusPane(props: { paneIndex: number; openFromPane: OpenFromPane }) {
   const [matrix] = createResource(fetchSrsKanjiMatrix);
@@ -59,42 +61,12 @@ export function SrsStatusPane(props: { paneIndex: number; openFromPane: OpenFrom
                 </div>
               </Match>
               <Match when={rows().length > 0}>
-                <div class="srs-matrix-wrap">
-                  <table class="dict srs-matrix">
-                    <thead>
-                      <tr>
-                        <th>Kanji</th>
-                        <th>Meaning</th>
-                        <SortableHeader label="Next" sortKey="next" sort={sort()} onSort={setSortKey} />
-                        <SortableHeader label="Recognition" sortKey="recognition" sort={sort()} onSort={setSortKey} />
-                        <SortableHeader label="Production" sortKey="production" sort={sort()} onSort={setSortKey} />
-                        <SortableHeader label="Load" sortKey="load" sort={sort()} onSort={setSortKey} />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <For each={rows()}>
-                        {(row) => (
-                          <tr onClick={() => props.openFromPane(row.targetPaneKey, props.paneIndex)}>
-                            <td class="jp glyph-cell">{row.kanjiLiteral}</td>
-                            <td>{row.meaning}</td>
-                            <td>
-                              <span class={`srs-matrix-chip ${row.nextTone}`}>{row.nextLabel}</span>
-                            </td>
-                            <td>
-                              <CardCell cell={row.recognition} />
-                            </td>
-                            <td>
-                              <CardCell cell={row.production} />
-                            </td>
-                            <td class="srs-matrix-load">
-                              <CardStats stats={row.stats} />
-                            </td>
-                          </tr>
-                        )}
-                      </For>
-                    </tbody>
-                  </table>
-                </div>
+                <SrsStatusTable 
+                  rows={rows()} 
+                  sort={sort()} 
+                  setSortKey={setSortKey} 
+                  openPane={(targetPaneKey: PaneKey) => props.openFromPane(targetPaneKey, props.paneIndex)}
+                  />
               </Match>
             </Switch>
           </section>
@@ -102,6 +74,50 @@ export function SrsStatusPane(props: { paneIndex: number; openFromPane: OpenFrom
       </Match>
     </Switch>
   );
+}
+
+function SrsStatusTable(props: { 
+  rows: SrsStatusRowViewModel[]; 
+  sort: SrsStatusSort; 
+  setSortKey: (key: SrsStatusSortKey) => void; 
+  openPane: (targetPaneKey: PaneKey) => void;
+}) {
+  return <div class="srs-matrix-wrap">
+    <table class="dict srs-matrix">
+      <thead>
+        <tr>
+          <th>Kanji</th>
+          <th>Meaning</th>
+          <SortableHeader label="Next" sortKey="next" sort={props.sort} onSort={props.setSortKey} />
+          <SortableHeader label="Recognition" sortKey="recognition" sort={props.sort} onSort={props.setSortKey} />
+          <SortableHeader label="Production" sortKey="production" sort={props.sort} onSort={props.setSortKey} />
+          <SortableHeader label="Load" sortKey="load" sort={props.sort} onSort={props.setSortKey} />
+        </tr>
+      </thead>
+      <tbody>
+        <For each={props.rows}>
+          {(row) => (
+            <tr onClick={() => props.openPane(row.targetPaneKey)}>
+              <td class="jp glyph-cell">{row.kanjiLiteral}</td>
+              <td>{row.meaning}</td>
+              <td>
+                <span class={`srs-matrix-chip ${row.nextTone}`}>{row.nextLabel}</span>
+              </td>
+              <td>
+                <CardCell cell={row.recognition} />
+              </td>
+              <td>
+                <CardCell cell={row.production} />
+              </td>
+              <td class="srs-matrix-load">
+                <CardStats stats={row.stats} />
+              </td>
+            </tr>
+          )}
+        </For>
+      </tbody>
+    </table>
+  </div>;
 }
 
 function SortableHeader(props: {
