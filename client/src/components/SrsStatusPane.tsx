@@ -4,6 +4,7 @@ import { fetchSrsKanjiMatrix } from "../api";
 import {
   createSrsStatusRows,
   initialSrsStatusSort,
+  SrsStatusStats,
   toggleSrsStatusSort,
   type SrsStatusCardCellViewModel,
   type SrsStatusSort,
@@ -85,7 +86,9 @@ export function SrsStatusPane(props: { paneIndex: number; openFromPane: OpenFrom
                             <td>
                               <CardCell cell={row.production} />
                             </td>
-                            <td class="srs-matrix-load">{row.loadLabel}</td>
+                            <td class="srs-matrix-load">
+                              <CardStats stats={row.stats} />
+                            </td>
                           </tr>
                         )}
                       </For>
@@ -122,8 +125,19 @@ function SortableHeader(props: {
 function CardCell(props: { cell: SrsStatusCardCellViewModel }) {
   return (
     <div class="srs-matrix-cell">
-      <span class={`srs-matrix-chip ${props.cell.tone}`}>{props.cell.label}</span>
-      <span class="srs-matrix-meta">{props.cell.meta}</span>
+      <span class={`srs-matrix-chip ${props.cell.tone}`}>
+        {props.cell.label}
+      </span>
+      <CardStats stats={props.cell.stats} />
     </div>
+  );
+}
+
+function CardStats(props: { stats: SrsStatusStats }) {
+  return (
+    <span class="srs-matrix-meta">
+      <span>{props.stats.reps} reps</span>
+      <span>{props.stats.lapses} lapses</span>
+    </span>
   );
 }

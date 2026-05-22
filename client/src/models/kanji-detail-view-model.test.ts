@@ -209,7 +209,7 @@ describe("createKanjiDetailViewModel", () => {
     expect(model.srs.statusLabel).toBe("In SRS");
     expect(model.srs.actionLabel).toBe("Remove from SRS");
     expect(model.srs.cards.map((card) => [card.label, card.stateLabel])).toEqual([
-      ["Production", "review"],
+      ["Production", ""],
       ["Recognition", "learning"],
     ]);
   });

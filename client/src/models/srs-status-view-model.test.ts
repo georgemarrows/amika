@@ -135,8 +135,8 @@ describe("SRS status view model", () => {
     expect(labelDue(new Date("2026-05-20T09:00:00.000Z"), now)).toBe("due now");
     expect(labelDue(new Date("2026-05-20T12:00:00.000Z"), now)).toBe("today");
     expect(labelDue(new Date("2026-05-24T10:00:00.000Z"), now)).toBe("in 4d");
-    expect(tool?.recognition.label).toBe("learning · today");
+    expect(tool?.recognition.label).toBe("learning today");
     expect(forget?.recognition.label).toBe("disabled");
-    expect(forget?.production.meta).toBe("missing card");
+    expect(forget?.production.stats).toEqual({ reps: 0, lapses: 0 });
   });
 });

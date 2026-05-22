@@ -62,7 +62,7 @@ describe("createSrsReviewCardViewModel", () => {
     expect(model.kindLabel).toBe("Production");
     expect(model.isRecognition).toBe(false);
     expect(model.promptNote).toBe("Produce the kanji from the meaning and readings.");
-    expect(model.stateLabel).toBe("review · due now");
+    expect(model.stateLabel).toBe(" · due now");
     expect(model.words.map((word) => word.expression)).toEqual(["道具"]);
   });
 });

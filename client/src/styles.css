@@ -1182,13 +1182,16 @@ code,
 
 .srs-matrix-cell {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 2px;
   min-width: 134px;
+  align-items: center;
 }
 
 .srs-matrix-chip {
   display: inline-flex;
   width: fit-content;
+  height: min-content;
   align-items: center;
   gap: var(--gap-xs);
   border: var(--border-width) solid var(--color-border);
@@ -1260,6 +1263,8 @@ code,
   color: var(--color-dim);
   font-size: 12px;
   white-space: nowrap;
+  display: flex;
+  flex-direction: column;
 }
 
 .empty-state,

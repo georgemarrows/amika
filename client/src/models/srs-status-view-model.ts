@@ -17,8 +17,13 @@ export type SrsStatusCardCellViewModel = {
   label: string;
   tone: "new" | "learning" | "review" | "relearning" | "disabled";
   sortValue: number | null;
-  meta: string;
+  stats: SrsStatusStats;
 };
+
+export type SrsStatusStats = {
+  reps: number;
+  lapses: number;
+}
 
 export type SrsStatusRowViewModel = {
   kanjiLiteral: string;
@@ -29,7 +34,7 @@ export type SrsStatusRowViewModel = {
   nextSortValue: number | null;
   recognition: SrsStatusCardCellViewModel;
   production: SrsStatusCardCellViewModel;
-  loadLabel: string;
+  stats: SrsStatusStats;
   totalReps: number;
 };
 
@@ -79,7 +84,7 @@ export function createSrsStatusRow(
     nextSortValue: nextDue ? nextDue.getTime() : null,
     recognition,
     production,
-    loadLabel: `${item.totalReps} reps · ${item.totalLapses} lapses`,
+    stats: { reps: item.totalReps, lapses: item.totalLapses },
     totalReps: item.totalReps,
   };
 }
@@ -90,7 +95,7 @@ function createCardCell(card: SrsCardSummary | null, now: Date): SrsStatusCardCe
       label: "disabled",
       tone: "disabled",
       sortValue: null,
-      meta: card ? `${card.reps} reps · ${card.lapses} lapses` : "missing card",
+      stats: { reps: card ? card.reps : 0, lapses: card ? card.lapses : 0 },
     };
   }
 
@@ -101,7 +106,7 @@ function createCardCell(card: SrsCardSummary | null, now: Date): SrsStatusCardCe
     label: `${labelSrsCardState(card.state)} ${dueLabel}`,
     tone: toneForCard(card, due, now),
     sortValue: due.getTime(),
-    meta: `${card.reps} reps · ${card.lapses} lapses`,
+    stats: { reps: card.reps, lapses: card.lapses },
   };
 }
 
