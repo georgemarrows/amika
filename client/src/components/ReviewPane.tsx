@@ -17,6 +17,7 @@ import {
 import type { SrsUiState } from "../state/srs-ui-state";
 import { KanjiPane } from "./KanjiPane";
 import type { OpenPane } from "./pane-props";
+import { Columns, HorizontalRule } from "./helpers";
 
 type ReviewLogEntry = {
   literal: string;
@@ -199,26 +200,24 @@ function AnswerKanjiCard(props: {
 }) {
   return (
     <section class="review-answer">
-      <div class="review-answer-toolbar">
-        <ReviewCardMeta card={props.card} />
-        <div class="review-controls answer-controls">
-          <For each={srsReviewRatings}>
-            {(rating) => (
-              <button
-                class={`review-btn ${rating.id}`}
-                type="button"
-                disabled={props.submitting}
-                onClick={() => void props.rate(rating)}
-              >
-                {rating.label}
-              </button>
-            )}
-          </For>
-        </div>
-        <Show when={props.submitError}>
-          {(message) => <div class="review-error">{message()}</div>}
-        </Show>
-      </div>
+      <Columns gridTemplateColumns="repeat(4, 1fr)" gap="0.5rem">
+        <For each={srsReviewRatings}>
+          {(rating) => (
+            <button
+              class={`review-btn ${rating.id}`}
+              type="button"
+              disabled={props.submitting}
+              onClick={() => void props.rate(rating)}
+            >
+              {rating.label}
+            </button>
+          )}
+        </For>
+      </Columns>
+      <Show when={props.submitError}>
+        {(message) => <div class="review-error">{message()}</div>}
+      </Show>
+      <HorizontalRule />
       <KanjiPane
         literal={props.card.literal}
         srsState={props.srsState}

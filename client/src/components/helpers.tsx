@@ -30,3 +30,9 @@ export function Columns(props: ColumnsProps) {
     </div>
   );
 }
+
+export function HorizontalRule(
+  props: Omit<JSX.HTMLAttributes<HTMLHRElement>, "class">,
+) {
+  return <hr {...props} class="horizontal-rule" />;
+}

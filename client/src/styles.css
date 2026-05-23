@@ -25,6 +25,12 @@
   --color-new-bg: rgba(134, 189, 223, 0.11);
   --color-new-border: rgba(134, 189, 223, 0.36);
   --color-shadow: rgba(0, 0, 0, 0.5);
+
+  --color-again: #bf5f5f; 
+  --color-hard: #c99a3a;
+  --color-good: #7aa7d9;
+  --color-easy: #78b068;
+
   --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --font-jp: "Hiragino Kaku Gothic ProN", "Noto Sans JP", -apple-system, sans-serif;
   --font-mono: "SF Mono", Menlo, monospace;
@@ -1003,24 +1009,11 @@ code,
   gap: var(--gap-lg);
 }
 
-.review-answer-toolbar {
-  display: grid;
-  gap: var(--gap-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-card);
-  padding: var(--gap-lg);
-}
-
 .review-controls {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--gap-sm);
-}
-
-.answer-controls {
-  justify-content: flex-start;
 }
 
 .review-btn {
@@ -1051,28 +1044,36 @@ code,
 }
 
 .review-btn.again {
-  color: #bf5f5f;
+  color: var(--color-again);
+  margin-right: 1rem;
 }
 
 .review-btn.hard {
-  color: var(--color-srs);
+  color: var(--color-hard);
 }
 
 .review-btn.good {
-  color: var(--color-ok);
+  color: var(--color-good);
 }
 
 .review-btn.easy {
-  color: var(--color-accent);
+  color: var(--color-easy);
 }
 
 .review-error {
   border: var(--border-width) solid #6b3434;
   border-radius: var(--radius-md);
   background: rgba(107, 52, 52, 0.18);
-  color: #d98a8a;
+  color: var(--color-again);
   padding: var(--gap-sm) var(--gap-md);
   font-size: 12px;
+}
+
+.horizontal-rule {
+  width: 100%;
+  background-color: var(--color-dim);
+  height: 1px;
+  border: 0;
 }
 
 .review-log {
