@@ -3,26 +3,40 @@
 Sequenced implementation plan. Each task cites the requirement IDs it covers. Mark tasks `[ ]` → `[x]` as they land.
 
 ## Tech debt 
-- [ ] T-10000 Explore simplifications for backend, Tanstack etc
-- [x] T-10100 Out of order: full review of existing codebase - see docs/review*.md
-- [ ] T-10200 At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
+- [x] T-10000 Client-side. Initial work to introduce better components
+- [x] T-10200 Out of order: full review of existing codebase - see docs/review*.md
+- [ ] T-10210 Review. At some point: review review comments and fix most important. Done: client. Still to review: server & overall.
+- [ ] T-10300 Explore simplifications for backend, Tanstack etc
+- [ ] T-10400 Macaron for frontend components / design system.
 
 ## Meta work
 - [x] T-20000 Clean up Phase 1 task list
+- [ ] T-20100 Review spec.md - is it still valid?
+- [ ] T-20200 Add ADR for component on frontend.
 
 ## Next up
-- [x] T-30000a load a single kanji with all readings.
-- [x] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
-- [x] T-30100 Search - see docs/30100-search for details
-- T-30200 SRS @docs/30200-srs/srs-plan.md 
-- [x] T-30200a Round 1 SRS Core
-- [x] T-30200b Round 2 Anki importer
-- [x] T-30200c Round 3 UI & endpoints
-- [x] T-30200d run importer
 - [ ] T-30200e tune UI - see bugs.md
-- [x] T-30200f see status of all cards in editor grid
 - [ ] T-30300 Backups
-- [ ] T-30400 Add example sentences. Following deleted non-words could go in examples
+- [ ] T-30500 Dictionary import. Local JMdict ingestion: download jmdict-simplified, load into SQLite with indices on headword, reading, and English gloss. Investigate Yomitan dictionaries - are they in standardised format? Ref: ADR 0004
+
+
+
+# Future epics (unprioritized)
+
+## Full Kanji Damage loading
+  - [ ] T-1010c Readings + mnemonics: add kanji readings and mnemonics tables; parse Kanji Damage onyomi, mnemonic, first kunyomi, and useful full mnemonic HTML; sanitize rendered HTML; extend the kanji endpoint and UI. · R-DATA-002, R-DICT-002, R-CMP-001
+  - [ ] T-1010d Components: add component primitives and kanji components; parse Kanji Damage components, including image/symbol primitives and variant forms; expose and render components near the top of the kanji UI. · R-DATA-002, R-DICT-002, R-CMP-001
+  - [ ] T-1010f Relations: add kanji relations; parse Kanji Damage lookalikes and used-in data; expose relations through the kanji endpoint and render compact related-kanji sections. · R-DATA-002, R-DATA-006, R-CMP-001..003, R-DICT-002
+  - [ ] T-1010g Full import hardening: make the APKG import idempotent, transactional, and repeatable across the full deck; add import summaries, parser fixtures/tests, error reporting, and media cleanup behavior. · R-DICT-002, R-DICT-005, R-PERS-001
+
+
+## UI improvements
+* Full keyboard nav
+
+## Export: dump all user data to a single JSON/SQLite archive. · R-PERS-002
+
+## Example sentences
+- [ ] Add example sentences. Following deleted non-words could go in examples
 ```json
      {
         "expression": "1969年",
@@ -71,25 +85,6 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
       }
 ```
 
-# Future epics (unprioritized)
-
-## Full Kanji Damage loading
-  - [ ] T-1010c Readings + mnemonics: add kanji readings and mnemonics tables; parse Kanji Damage onyomi, mnemonic, first kunyomi, and useful full mnemonic HTML; sanitize rendered HTML; extend the kanji endpoint and UI. · R-DATA-002, R-DICT-002, R-CMP-001
-  - [ ] T-1010d Components: add component primitives and kanji components; parse Kanji Damage components, including image/symbol primitives and variant forms; expose and render components near the top of the kanji UI. · R-DATA-002, R-DICT-002, R-CMP-001
-  - [ ] T-1010f Relations: add kanji relations; parse Kanji Damage lookalikes and used-in data; expose relations through the kanji endpoint and render compact related-kanji sections. · R-DATA-002, R-DATA-006, R-CMP-001..003, R-DICT-002
-  - [ ] T-1010g Full import hardening: make the APKG import idempotent, transactional, and repeatable across the full deck; add import summaries, parser fixtures/tests, error reporting, and media cleanup behavior. · R-DICT-002, R-DICT-005, R-PERS-001
-
-
-## UI improvements
-* Full keyboard nav
-
-## Export: dump all user data to a single JSON/SQLite archive. · R-PERS-002
-
-
-## Local JMdict ingestion: download jmdict-simplified, load into SQLite with indices on headword, reading, and English gloss. ·
- R-DICT-001, R-DICT-005
-
-
 ## Phase 2 — Book OCR ingest (most-exercising pipeline)
 
 
@@ -123,7 +118,7 @@ Sequenced implementation plan. Each task cites the requirement IDs it covers. Ma
 - [x] T-0000 Single-file HTML prototype: tiling panes, command palette, inline SRS, selection lookup, Kanji-Damage-style kanji page, confusable compare. Seed data for a lesson, podcast snippet, and book reading.
   - Covers: R-UX-001..009, R-UX-101..105, R-UX-201..203, R-LOOK-001..008 (partial), R-SRS-001..003 (mock), R-CMP-001..003, R-DATA-001..006 (in-memory).
 
-## Foundations
+## Foundations 1
 
 Goal: stop being a single HTML file; have a real dictionary and persistent storage.
 
@@ -135,3 +130,14 @@ The following 1010 subtasks reference T1010_detailed_design.md.
 - [x] T-1010e Jukugo words: add generic words, word-kanji links, and word meanings; parse Kanji Damage first/full jukugo; expose words through the kanji endpoint and render them in the UI. · R-DATA-001, R-DATA-002, R-DATA-006, R-DICT-002
 - [x] T-1010ea Refactor client code
 - [x] T-1010eb Move tests?
+
+## Foundations 2 - Kanji Damage importer, search & SRS
+- [x] T-30000a load a single kanji with all readings.
+- [x] T-30000b load all Kanji Damage kanji, readings and example words. Not data that isn't already being handled (like mnemonics, components, relations)
+- [x] T-30100 Search - see docs/30100-search for details
+- T-30200 SRS @docs/30200-srs/srs-plan.md 
+- [x] T-30200a Round 1 SRS Core
+- [x] T-30200b Round 2 Anki importer
+- [x] T-30200c Round 3 UI & endpoints
+- [x] T-30200d run importer
+- [x] T-30200f see status of all cards in editor grid

@@ -40,6 +40,6 @@
 - Prefer extracting large JSX blocks into small, named local components instead of keeping dense markup inline in the pane component.
 - Pass typed callback props that describe UI intent, such as `openPane`, rather than threading broader app state through child components.
 - Prefer structured view-model data over preformatted strings when repeated UI fragments need consistent rendering.
-- Reuse small presentation components.
+- Reuse small presentation components: use and extend [helpers.tsx](client/src/components/helpers.tsx) for common UI patterns and building blocks.
 - Keep feature-specific helper components local to the component file until they are reused elsewhere.
 - Prefer Switch/Match to the assymmetry of Show with fallback.
