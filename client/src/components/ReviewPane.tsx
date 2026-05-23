@@ -15,6 +15,8 @@ import {
   type SrsReviewRatingViewModel,
 } from "../models/srs-review-view-model";
 import type { SrsUiState } from "../state/srs-ui-state";
+import { KanjiPane } from "./KanjiPane";
+import type { OpenPane } from "./pane-props";
 
 type ReviewLogEntry = {
   literal: string;
@@ -22,7 +24,10 @@ type ReviewLogEntry = {
   ratingLabel: string;
 };
 
-export function ReviewPane(props: { srsState: SrsUiState }) {
+export function ReviewPane(props: {
+  srsState: SrsUiState;
+  openPane: OpenPane;
+}) {
   const [queue, { mutate }] = createResource(fetchSrsReviewQueue);
   const [revealed, setRevealed] = createSignal(false);
   const [submitting, setSubmitting] = createSignal(false);
@@ -113,39 +118,26 @@ export function ReviewPane(props: { srsState: SrsUiState }) {
               }
             >
               {(card) => (
-                <article class="review-card live">
-                  <div class="review-card-meta">
-                    <div class="review-card-kind">{card().kindLabel}</div>
-                    <div class="review-card-schedule">{card().stateLabel}</div>
-                  </div>
-
-                  <div class="review-card-face">
-                    <Show
-                      when={card().isRecognition}
-                      fallback={
-                        <>
-                          <div class="meaning-prompt">{card().meaning}</div>
-                          <ReadingStack card={card()} />
-                        </>
-                      }
-                    >
-                      <div class="kanji-prompt jp">{card().literal}</div>
-                    </Show>
-                    <div class="prompt-note">{card().promptNote}</div>
-
-                    <Show when={revealed()}>
-                      <AnswerPanel card={card()} />
-                    </Show>
-                  </div>
-
-                  <Show when={submitError()}>
-                    {(message) => <div class="review-error">{message()}</div>}
-                  </Show>
-
-                  <div class="review-controls">
-                    <Show
-                      when={revealed()}
-                      fallback={
+                <Show
+                  when={revealed()}
+                  fallback={
+                    <article class="review-card live">
+                      <ReviewCardMeta card={card()} />
+                      <div class="review-card-face">
+                        <Show
+                          when={card().isRecognition}
+                          fallback={
+                            <>
+                              <div class="meaning-prompt">{card().meaning}</div>
+                              <ReadingStack card={card()} />
+                            </>
+                          }
+                        >
+                          <div class="kanji-prompt jp">{card().literal}</div>
+                        </Show>
+                        <div class="prompt-note">{card().promptNote}</div>
+                      </div>
+                      <div class="review-controls">
                         <button
                           class="review-btn primary"
                           type="button"
@@ -154,29 +146,56 @@ export function ReviewPane(props: { srsState: SrsUiState }) {
                         >
                           Reveal answer
                         </button>
-                      }
-                    >
-                      <For each={srsReviewRatings}>
-                        {(rating) => (
-                          <button
-                            class={`review-btn ${rating.id}`}
-                            type="button"
-                            disabled={submitting()}
-                            onClick={() => void rate(rating)}
-                          >
-                            {rating.label}
-                          </button>
-                        )}
-                      </For>
-                    </Show>
-                  </div>
-                </article>
+                      </div>
+                    </article>
+                  }
+                >
+                  <section class="review-answer">
+                    <div class="review-answer-toolbar">
+                      <ReviewCardMeta card={card()} />
+                      <div class="review-controls answer-controls">
+                        <For each={srsReviewRatings}>
+                          {(rating) => (
+                            <button
+                              class={`review-btn ${rating.id}`}
+                              type="button"
+                              disabled={submitting()}
+                              onClick={() => void rate(rating)}
+                            >
+                              {rating.label}
+                            </button>
+                          )}
+                        </For>
+                      </div>
+                      <Show when={submitError()}>
+                        {(message) => <div class="review-error">{message()}</div>}
+                      </Show>
+                    </div>
+                    <KanjiPane
+                      literal={card().literal}
+                      srsState={props.srsState}
+                      openPane={props.openPane}
+                      showSrsPanel={false}
+                    />
+                  </section>
+                </Show>
               )}
             </Show>
           </section>
         )}
       </Match>
     </Switch>
+  );
+}
+
+function ReviewCardMeta(props: {
+  card: ReturnType<typeof createSrsReviewCardViewModel>;
+}) {
+  return (
+    <div class="review-card-meta">
+      <div class="review-card-kind">{props.card.kindLabel}</div>
+      <div class="review-card-schedule">{props.card.stateLabel}</div>
+    </div>
   );
 }
 
@@ -196,51 +215,6 @@ function ReadingStack(props: {
       <For each={props.card.otherReadings}>
         {(reading) => <span class="reading-chip jp">{reading.reading}</span>}
       </For>
-    </div>
-  );
-}
-
-function AnswerPanel(props: {
-  card: ReturnType<typeof createSrsReviewCardViewModel>;
-}) {
-  return (
-    <div class="answer-panel">
-      <div class="answer-grid">
-        <div class="answer-label">
-          {props.card.isRecognition ? "Meaning" : "Kanji"}
-        </div>
-        <div class={`answer-value ${props.card.isRecognition ? "" : "big jp"}`}>
-          {props.card.isRecognition ? props.card.meaning : props.card.literal}
-        </div>
-        <div class="answer-label">Onyomi</div>
-        <div class="answer-value jp">
-          {props.card.onReadings.map((reading) => reading.reading).join(", ") ||
-            "None"}
-        </div>
-        <div class="answer-label">Kunyomi</div>
-        <div class="answer-value jp">
-          {props.card.kunReadings
-            .map((reading) => reading.reading)
-            .join(", ") || "None"}
-        </div>
-        <div class="answer-label">Examples</div>
-        <div class="answer-value">
-          <Show
-            when={props.card.words.length > 0}
-            fallback="No examples imported."
-          >
-            <For each={props.card.words.slice(0, 4)}>
-              {(word) => (
-                <div>
-                  <span class="jp">{word.expression}</span>{" "}
-                  <span class="dim jp">{word.reading ?? "Unknown"}</span> -{" "}
-                  {word.meaning ?? "Unknown"}
-                </div>
-              )}
-            </For>
-          </Show>
-        </div>
-      </div>
     </div>
   );
 }

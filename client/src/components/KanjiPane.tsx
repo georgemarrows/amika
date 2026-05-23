@@ -14,7 +14,7 @@ import {
 } from "../models/kanji-detail-view-model";
 import type { SrsUiState } from "../state/srs-ui-state";
 import { Columns } from "./helpers";
-import type { OpenFromPane } from "./pane-props";
+import type { OpenPane } from "./pane-props";
 
 type KanjiSrsPanelProps = {
   srs: KanjiDetailViewModel["srs"];
@@ -27,8 +27,8 @@ type KanjiSrsPanelProps = {
 export function KanjiPane(props: {
   literal: string;
   srsState: SrsUiState;
-  paneIndex: number;
-  openFromPane: OpenFromPane;
+  openPane: OpenPane;
+  showSrsPanel?: boolean;
 }) {
   const [detail, { mutate }] = createResource(
     () => props.literal,
@@ -84,20 +84,27 @@ export function KanjiPane(props: {
 
           return (
             <>
-              <Columns
-                gridTemplateColumns="auto 1fr"
-                alignItems="center"
-                gap="4rem"
+              <Show
+                when={props.showSrsPanel !== false}
+                fallback={
+                  <KanjiHeading literal={model.literal} meaning={model.meaning} />
+                }
               >
-                <KanjiHeading literal={model.literal} meaning={model.meaning} />
+                <Columns
+                  gridTemplateColumns="auto 1fr"
+                  alignItems="center"
+                  gap="4rem"
+                >
+                  <KanjiHeading literal={model.literal} meaning={model.meaning} />
 
-                <KanjiSrsPanel
-                  srs={model.srs}
-                  pending={srsPending()}
-                  error={srsError()}
-                  onToggle={(enabled) => void toggleSrs(enabled)}
-                />
-              </Columns>
+                  <KanjiSrsPanel
+                    srs={model.srs}
+                    pending={srsPending()}
+                    error={srsError()}
+                    onToggle={(enabled) => void toggleSrs(enabled)}
+                  />
+                </Columns>
+              </Show>
               <KanjiReadingsSection readingGroups={model.readingGroups} />
               <KanjiMetadataSection metadata={model.metadata} />
               <KanjiStrokeOrderSection
@@ -107,8 +114,7 @@ export function KanjiPane(props: {
               />
               <KanjiWordsSection
                 words={model.words}
-                paneIndex={props.paneIndex}
-                openFromPane={props.openFromPane}
+                openPane={props.openPane}
               />
               <KanjiFutureDetailsSection
                 emptyFutureSections={model.emptyFutureSections}
@@ -268,8 +274,7 @@ function KanjiStrokeOrderSection(props: {
 
 function KanjiWordsSection(props: {
   words: KanjiDetailViewModel["words"];
-  paneIndex: number;
-  openFromPane: OpenFromPane;
+  openPane: OpenPane;
 }) {
   return (
     <section class="section">
@@ -284,9 +289,7 @@ function KanjiWordsSection(props: {
               <button
                 class="word-row"
                 type="button"
-                onClick={() =>
-                  props.openFromPane(`word:${word.id}`, props.paneIndex)
-                }
+                onClick={() => props.openPane(`word:${word.id}`)}
               >
                 <span>
                   <span class="jp word-expression">{word.expression}</span>

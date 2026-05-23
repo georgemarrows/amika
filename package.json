@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run scripts/dev.ts",
+    "dev:agent": "bash scripts/dev-agent.sh",
     "dev:client": "vite --config vite.config.ts",
     "dev:server": "node --import tsx --watch server/src/index.ts",
     "db:migrate": "node --import tsx scripts/db-migrate.ts",

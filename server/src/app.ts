@@ -307,7 +307,6 @@ function toSrsReviewCardResponse(db: Db, card: DomainSrsCard | null): SrsReviewC
       meaning: reading.meaning,
       usefulness: reading.usefulness,
     })),
-    words: getWordsForKanji(db, kanji.literal),
   };
 }
 

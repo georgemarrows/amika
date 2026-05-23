@@ -322,15 +322,7 @@ describe("server app", () => {
           usefulness: null,
         },
       ]);
-      assert.deepEqual(body.card.words, [
-        {
-          id: "word-dogu",
-          expression: "道具",
-          reading: "どうぐ",
-          meaning: "tool",
-          usefulness: "★★★★☆",
-        },
-      ]);
+      assert.equal(body.card.words, undefined);
       assert.match(body.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
     } finally {
       db.close();

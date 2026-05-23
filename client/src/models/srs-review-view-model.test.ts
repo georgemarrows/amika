@@ -22,7 +22,6 @@ describe("createSrsReviewCardViewModel", () => {
         { type: "on", reading: "GU", meaning: null, usefulness: null },
         { type: "kun", reading: "そな.える", meaning: "to equip", usefulness: null },
       ],
-      words: [],
     });
 
     expect(model.kindLabel).toBe("Recognition");
@@ -48,21 +47,11 @@ describe("createSrsReviewCardViewModel", () => {
       lastReviewedAt: null,
       meaning: "tool",
       readings: [],
-      words: [
-        {
-          id: "word-dogu",
-          expression: "道具",
-          reading: "どうぐ",
-          meaning: "tool",
-          usefulness: "★★★★☆",
-        },
-      ],
     });
 
     expect(model.kindLabel).toBe("Production");
     expect(model.isRecognition).toBe(false);
     expect(model.promptNote).toBe("Produce the kanji from the meaning and readings.");
     expect(model.stateLabel).toBe(" · due now");
-    expect(model.words.map((word) => word.expression)).toEqual(["道具"]);
   });
 });

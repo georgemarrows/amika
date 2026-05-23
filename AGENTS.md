@@ -19,7 +19,7 @@
 ## Tooling
 - uses jujutsu / jj NOT git
 - bun for JS tooling and server (but no runtime dependencies on Bun-specific APIs)
-- George typically keeps the dev server running on the standard port; check/reuse it before starting another server.
+- Developers typically keep `bun run dev` running on ports 3000/5173; leave that stack untouched and use `bun run dev:agent` for agent-run verification (defaults to API 3300 and client 5174).
 - Run code that imports `better-sqlite3` with Node/tsx, not `bun`; Bun cannot load this native module in this project.
 - Run migrations at process startup or explicit setup boundaries; do not add runtime fallbacks for missing migrated tables.
 

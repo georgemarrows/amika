@@ -1,5 +1,4 @@
 import type { KanjiReading } from "./kanji-reading.js";
-import type { KanjiWordSummary } from "./kanji-detail.js";
 
 export type SrsCardKind = "kanji_recognition" | "kanji_production";
 export type SrsCardState = "new" | "learning" | "review" | "relearning";
@@ -60,7 +59,6 @@ export type SrsKanjiMatrixResponse = {
 export type SrsReviewCardResponse = SrsCardSummary & {
   meaning: string;
   readings: KanjiReading[];
-  words: KanjiWordSummary[];
 };
 
 export type SrsReviewQueueResponse = {

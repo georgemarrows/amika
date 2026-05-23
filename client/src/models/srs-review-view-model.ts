@@ -24,7 +24,6 @@ export type SrsReviewCardViewModel = {
   onReadings: KanjiReading[];
   kunReadings: KanjiReading[];
   otherReadings: KanjiReading[];
-  words: SrsReviewCardResponse["words"];
   promptNote: string;
   isRecognition: boolean;
 };
@@ -42,7 +41,6 @@ export function createSrsReviewCardViewModel(card: SrsReviewCardResponse): SrsRe
     onReadings: card.readings.filter((reading) => reading.type === "on"),
     kunReadings: card.readings.filter((reading) => reading.type === "kun"),
     otherReadings: card.readings.filter((reading) => reading.type === "unknown"),
-    words: card.words,
     promptNote: isRecognition
       ? "Name the readings and English meaning."
       : "Produce the kanji from the meaning and readings.",

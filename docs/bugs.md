@@ -15,11 +15,11 @@ SRS
 - [x] review count should be zero without import ![screenshot](bugpics/wrong_review_count.png)
 - [x] defect after hitting add to SRS on a kanji ![screenshot](bugpics/400_after_add_to_srs.png)
 - [ ] Add daily caps/new-card introduction semantics so Anki `new` cards can be imported without all becoming due immediately.
-- [ ] SRS info on Kanji cards too big
+- [x] SRS info on Kanji cards too big
 - [ ] SRS card layout front and back
 - [ ] add delay to again, hard, good, easy (or is it better without?)
-- [ ] link words to word cards for better exploration
-- [ ] stroke order diagrams on kanji cards
+- [x] link words to word cards for better exploration
+- [x] stroke order diagrams on kanji cards
 
 SRS browse
 - [x] width of pane
