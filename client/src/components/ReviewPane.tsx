@@ -107,80 +107,34 @@ export function ReviewPane(props: {
               <div class="review-progress">{loadedQueue().dueCount} due</div>
             </div>
 
-            <Show
-              when={currentCard()}
-              fallback={
-                <section class="review-summary">
-                  <h2>Review complete</h2>
-                  <p class="subtitle">No due SRS cards right now.</p>
-                  <ReviewLog entries={log()} />
-                </section>
-              }
-            >
-              {(card) => (
-                <Show
-                  when={revealed()}
-                  fallback={
-                    <article class="review-card live">
-                      <ReviewCardMeta card={card()} />
-                      <div class="review-card-face">
-                        <Show
-                          when={card().isRecognition}
-                          fallback={
-                            <>
-                              <div class="meaning-prompt">{card().meaning}</div>
-                              <ReadingStack card={card()} />
-                            </>
-                          }
-                        >
-                          <div class="kanji-prompt jp">{card().literal}</div>
-                        </Show>
-                        <div class="prompt-note">{card().promptNote}</div>
-                      </div>
-                      <div class="review-controls">
-                        <button
-                          class="review-btn primary"
-                          type="button"
-                          disabled={submitting()}
-                          onClick={() => setRevealed(true)}
-                        >
-                          Reveal answer
-                        </button>
-                      </div>
-                    </article>
-                  }
-                >
-                  <section class="review-answer">
-                    <div class="review-answer-toolbar">
-                      <ReviewCardMeta card={card()} />
-                      <div class="review-controls answer-controls">
-                        <For each={srsReviewRatings}>
-                          {(rating) => (
-                            <button
-                              class={`review-btn ${rating.id}`}
-                              type="button"
-                              disabled={submitting()}
-                              onClick={() => void rate(rating)}
-                            >
-                              {rating.label}
-                            </button>
-                          )}
-                        </For>
-                      </div>
-                      <Show when={submitError()}>
-                        {(message) => <div class="review-error">{message()}</div>}
-                      </Show>
-                    </div>
-                    <KanjiPane
-                      literal={card().literal}
-                      srsState={props.srsState}
-                      openPane={props.openPane}
-                      showSrsPanel={false}
-                    />
-                  </section>
-                </Show>
-              )}
-            </Show>
+            <Switch>
+              <Match when={currentCard()}>
+                {(card) => (
+                  <Switch>
+                    <Match when={!revealed()}>
+                      <ReviewKanjiCard
+                        card={card()}
+                        submitting={submitting()}
+                        onReveal={() => setRevealed(true)}
+                      />
+                    </Match>
+                    <Match when={true}>
+                      <AnswerKanjiCard
+                        card={card()}
+                        openPane={props.openPane}
+                        rate={rate}
+                        srsState={props.srsState}
+                        submitError={submitError()}
+                        submitting={submitting()}
+                      />
+                    </Match>
+                  </Switch>
+                )}
+              </Match>
+              <Match when={true}>
+                <ReviewLog entries={log()} />
+              </Match>
+            </Switch>
           </section>
         )}
       </Match>
@@ -196,6 +150,82 @@ function ReviewCardMeta(props: {
       <div class="review-card-kind">{props.card.kindLabel}</div>
       <div class="review-card-schedule">{props.card.stateLabel}</div>
     </div>
+  );
+}
+
+function ReviewKanjiCard(props: {
+  card: ReturnType<typeof createSrsReviewCardViewModel>;
+  submitting: boolean;
+  onReveal: () => void;
+}) {
+  return (
+    <article class="review-card live">
+      <ReviewCardMeta card={props.card} />
+      <div class="review-card-face">
+        <Show
+          when={props.card.isRecognition}
+          fallback={
+            <>
+              <div class="meaning-prompt">{props.card.meaning}</div>
+              <ReadingStack card={props.card} />
+            </>
+          }
+        >
+          <div class="kanji-prompt jp">{props.card.literal}</div>
+        </Show>
+        <div class="prompt-note">{props.card.promptNote}</div>
+      </div>
+      <div class="review-controls">
+        <button
+          class="review-btn primary"
+          type="button"
+          disabled={props.submitting}
+          onClick={props.onReveal}
+        >
+          Reveal answer
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function AnswerKanjiCard(props: {
+  card: ReturnType<typeof createSrsReviewCardViewModel>;
+  openPane: OpenPane;
+  rate: (rating: SrsReviewRatingViewModel) => Promise<void>;
+  srsState: SrsUiState;
+  submitError: string | null;
+  submitting: boolean;
+}) {
+  return (
+    <section class="review-answer">
+      <div class="review-answer-toolbar">
+        <ReviewCardMeta card={props.card} />
+        <div class="review-controls answer-controls">
+          <For each={srsReviewRatings}>
+            {(rating) => (
+              <button
+                class={`review-btn ${rating.id}`}
+                type="button"
+                disabled={props.submitting}
+                onClick={() => void props.rate(rating)}
+              >
+                {rating.label}
+              </button>
+            )}
+          </For>
+        </div>
+        <Show when={props.submitError}>
+          {(message) => <div class="review-error">{message()}</div>}
+        </Show>
+      </div>
+      <KanjiPane
+        literal={props.card.literal}
+        srsState={props.srsState}
+        openPane={props.openPane}
+        showSrsPanel={false}
+      />
+    </section>
   );
 }
 
@@ -221,18 +251,23 @@ function ReadingStack(props: {
 
 function ReviewLog(props: { entries: ReviewLogEntry[] }) {
   return (
-    <Show when={props.entries.length > 0}>
-      <div class="review-log">
-        <For each={props.entries}>
-          {(entry) => (
-            <div class="review-log-row">
-              <span class="jp">{entry.literal}</span>
-              <span>{entry.kindLabel}</span>
-              <span>{entry.ratingLabel}</span>
-            </div>
-          )}
-        </For>
-      </div>
-    </Show>
+    <section class="review-summary">
+      <h2>Review complete</h2>
+      <p class="subtitle">No due SRS cards right now.</p>
+
+      <Show when={props.entries.length > 0}>
+        <div class="review-log">
+          <For each={props.entries}>
+            {(entry) => (
+              <div class="review-log-row">
+                <span class="jp">{entry.literal}</span>
+                <span>{entry.kindLabel}</span>
+                <span>{entry.ratingLabel}</span>
+              </div>
+            )}
+          </For>
+        </div>
+      </Show>
+    </section>
   );
 }

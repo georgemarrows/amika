@@ -42,3 +42,4 @@
 - Prefer structured view-model data over preformatted strings when repeated UI fragments need consistent rendering.
 - Reuse small presentation components.
 - Keep feature-specific helper components local to the component file until they are reused elsewhere.
+- Prefer Switch/Match to the assymmetry of Show with fallback.
