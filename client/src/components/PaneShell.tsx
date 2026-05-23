@@ -127,8 +127,7 @@ export function PaneShell(props: { state: HomePageData }) {
                     paneKey={paneKey}
                     state={props.state}
                     srsState={srsState}
-                    paneIndex={index()}
-                    openFromPane={paneState.openFromPane}
+                    openPane={(key) => paneState.openFromPane(key, index())}
                   />
                 </div>
               </section>

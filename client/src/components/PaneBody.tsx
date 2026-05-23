@@ -13,44 +13,46 @@ export function PaneBody(props: PaneBodyProps) {
       <HomePane
         state={props.state}
         srsState={props.srsState}
-        paneIndex={props.paneIndex}
-        openFromPane={props.openFromPane}
+        openPane={props.openPane}
       />
     );
   }
 
   if (props.paneKey === "review") {
-    return <ReviewPane srsState={props.srsState} />;
+    return (
+      <ReviewPane
+        srsState={props.srsState}
+        openPane={props.openPane}
+      />
+    );
   }
 
   if (props.paneKey === "srs-status") {
-    return <SrsStatusPane paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
+    return <SrsStatusPane openPane={props.openPane} />;
   }
 
   if (props.paneKey === "list-kanji") {
-    return <KanjiListPane paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
+    return <KanjiListPane openPane={props.openPane} />;
   }
 
   if (props.paneKey === "list-words") {
-    return <WordListPane paneIndex={props.paneIndex} openFromPane={props.openFromPane} />;
+    return <WordListPane openPane={props.openPane} />;
   }
 
   if (props.paneKey.startsWith("word:")) {
     return (
       <WordPane
         id={props.paneKey.slice("word:".length)}
-        paneIndex={props.paneIndex}
-        openFromPane={props.openFromPane}
+        openPane={props.openPane}
       />
     );
   }
 
   return (
-      <KanjiPane
-        literal={props.paneKey.slice("kanji:".length)}
-        srsState={props.srsState}
-        paneIndex={props.paneIndex}
-        openFromPane={props.openFromPane}
+    <KanjiPane
+      literal={props.paneKey.slice("kanji:".length)}
+      srsState={props.srsState}
+      openPane={props.openPane}
     />
   );
 }

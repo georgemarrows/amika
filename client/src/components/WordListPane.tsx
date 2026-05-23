@@ -3,7 +3,7 @@ import { For, Match, Show, Switch, createResource } from "solid-js";
 import { fetchWordList } from "../api";
 import type { PaneBodyProps } from "./pane-props";
 
-export function WordListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFromPane">) {
+export function WordListPane(props: Pick<PaneBodyProps, "openPane">) {
   const [list] = createResource(fetchWordList);
 
   return (
@@ -32,7 +32,7 @@ export function WordListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFromP
                 <tbody>
                   <For each={loadedList().items}>
                     {(word) => (
-                      <tr onClick={() => props.openFromPane(`word:${word.id}`, props.paneIndex)}>
+                      <tr onClick={() => props.openPane(`word:${word.id}`)}>
                         <td class="jp">{word.expression}</td>
                         <td class="jp">{word.reading ?? ""}</td>
                         <td>{word.meaning ?? "Unknown"}</td>

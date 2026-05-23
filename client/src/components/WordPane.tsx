@@ -2,9 +2,9 @@ import { For, Match, Show, Switch, createResource } from "solid-js";
 
 import { fetchWordDetail } from "../api";
 import { createWordDetailViewModel } from "../models/word-detail-view-model";
-import type { OpenFromPane } from "./pane-props";
+import type { OpenPane } from "./pane-props";
 
-export function WordPane(props: { id: string; paneIndex: number; openFromPane: OpenFromPane }) {
+export function WordPane(props: { id: string; openPane: OpenPane }) {
   const [detail] = createResource(() => props.id, fetchWordDetail);
 
   return (
@@ -63,7 +63,7 @@ export function WordPane(props: { id: string; paneIndex: number; openFromPane: O
                         <button
                           class="kanji-chip"
                           type="button"
-                          onClick={() => props.openFromPane(`kanji:${kanji.literal}`, props.paneIndex)}
+                          onClick={() => props.openPane(`kanji:${kanji.literal}`)}
                         >
                           <span class="jp">{kanji.literal}</span>
                           <span>{kanji.meaning ?? "Unknown"}</span>

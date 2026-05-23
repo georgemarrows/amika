@@ -3,7 +3,7 @@ import { For, Match, Show, Switch, createResource } from "solid-js";
 import { fetchKanjiList } from "../api";
 import type { PaneBodyProps } from "./pane-props";
 
-export function KanjiListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFromPane">) {
+export function KanjiListPane(props: Pick<PaneBodyProps, "openPane">) {
   const [list] = createResource(fetchKanjiList);
 
   return (
@@ -32,7 +32,7 @@ export function KanjiListPane(props: Pick<PaneBodyProps, "paneIndex" | "openFrom
                 <tbody>
                   <For each={loadedList().items}>
                     {(kanji) => (
-                      <tr onClick={() => props.openFromPane(`kanji:${kanji.literal}`, props.paneIndex)}>
+                      <tr onClick={() => props.openPane(`kanji:${kanji.literal}`)}>
                         <td class="jp glyph-cell">{kanji.literal}</td>
                         <td>{kanji.meaning}</td>
                         <td class="r">{kanji.strokeCount === null ? "" : `${kanji.strokeCount} strokes`}</td>

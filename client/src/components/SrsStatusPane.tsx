@@ -11,10 +11,9 @@ import {
   type SrsStatusSort,
   type SrsStatusSortKey,
 } from "../models/srs-status-view-model";
-import type { OpenFromPane } from "./pane-props";
-import { PaneKey } from "../state/pane-state";
+import type { OpenPane } from "./pane-props";
 
-export function SrsStatusPane(props: { paneIndex: number; openFromPane: OpenFromPane }) {
+export function SrsStatusPane(props: { openPane: OpenPane }) {
   const [matrix] = createResource(fetchSrsKanjiMatrix);
   const [sort, setSort] = createSignal<SrsStatusSort>(initialSrsStatusSort);
   const rows = createMemo(() => {
@@ -65,7 +64,7 @@ export function SrsStatusPane(props: { paneIndex: number; openFromPane: OpenFrom
                   rows={rows()} 
                   sort={sort()} 
                   setSortKey={setSortKey} 
-                  openPane={(targetPaneKey: PaneKey) => props.openFromPane(targetPaneKey, props.paneIndex)}
+                  openPane={props.openPane}
                   />
               </Match>
             </Switch>
@@ -80,7 +79,7 @@ function SrsStatusTable(props: {
   rows: SrsStatusRowViewModel[]; 
   sort: SrsStatusSort; 
   setSortKey: (key: SrsStatusSortKey) => void; 
-  openPane: (targetPaneKey: PaneKey) => void;
+  openPane: OpenPane;
 }) {
   return <div class="srs-matrix-wrap">
     <table class="dict srs-matrix">
