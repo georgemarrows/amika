@@ -12,17 +12,30 @@ The system is built around a **bidirectional graph of entities** (texts, words, 
 
 The entities and their relations:
 
-```
-text ──contains──▶ words
-word ──composed-of──▶ kanji
-word ──glosses-to──▶ English meaning
-word ──appears-in──▶ texts              (backlink)
-kanji ──used-in──▶ words                (backlink)
-kanji ──has──▶ stroke order, components, mnemonics
-kanji ──confusable-with──▶ kanji        (curated + learned)
-grammar ──exemplified-by──▶ texts
-podcast ──transcribes-to──▶ text
-any entity ──can-be-in──▶ SRS queue
+```mermaid
+graph TD
+    text -->|contains| sentence
+    sentence -->|contains| word
+    word -->|composed-of| kanji
+    word -->|glosses-to| meaning["English meaning"]
+    word -->|appears-in| sentence
+    kanji -->|used-in| word
+    kanji -->|has| meta["stroke order, components, mnemonics"]
+    grammar -->|exemplified-by| sentence
+    podcast -->|transcribes-to| text
+
+    srs(["`Kanji, words, 
+    grammar, sentences 
+    can be added to the 
+    SRS queue 
+    for review.`"])
+
+    confusable(["`Groups of kanji 
+    and words can be 
+    flagged as 
+    'confusable' pairs.`"])
+
+
 ```
 
 Every relation is navigable from both ends. Every entity page ends with its backlinks.
@@ -33,7 +46,7 @@ Every relation is navigable from both ends. Every entity page ends with its back
 Clicking a link opens a new pane *to the right* of the current pane. The user builds a horizontal reasoning trail (text → word → kanji → confusable) and can close panes to refocus. No modals for navigation.
 
 ### 3.2 Command palette (⌘K)
-Typing any kanji, kana, romaji, English, or topic jumps to the match. Search is the primary navigation after the sidebar.
+Typing any kanji, kana, romaji, English, or topic jumps to the match. 
 
 ### 3.3 Backlinks everywhere
 Every entity page shows "appears in", "words using", "SRS cards referencing", etc. The graph is walkable from any node.
@@ -77,7 +90,51 @@ Standard SM-2 or FSRS scheduling over the graph. Any entity can enter the queue.
 
 A special case worth naming. Kanji the user mixes up (e.g. 実/美) get a compare view with side-by-side components, a one-line semantic diff, and a drill card. Confusable pairs can be curated manually or — later — inferred from user error patterns in SRS.
 
-## 8. Open questions / deferred
+## 8. Actions for different data types
+
+### Kanji 
+* **Display pane**: literal, readings, meaning, stroke count, stroke order diagram, components, mnemonics, JLPT grade, usefulness/frequency measures.
+  * Navigate to: selected list of words.
+* **SRS**: cards for recognition (kanji -> English/readings) and production (English/readings -> kanji). Result side is always the full kanji card.
+* **List**: not yet spec'd
+
+### Words
+* **Display pane**: reading, meanings, JLPT level, usefulness/frequency measures.
+  * Navigate to: kanji it contains, sentences it appears in.
+* **SRS**: cards for recognition (word -> English/reading) and production (English/reading -> word). Result side is the full word card. To consider later: cloze cards for the word in an example sentence.
+* **List**: not yet spec'd
+
+
+### Search
+Overview
+* This section currently covers only the data that will be loaded soon: kanji and vocab.
+* Search is across all loaded data, not just the user's library.
+* Results: kanji group, then word group.
+* Kanji group: show first four matches; expand for more.
+* Within groups: order by usefulness/frequency if available, except where stated.
+* No deinflection yet: `食べました` does not find `食べる`.
+
+Query types
+* Type single kanji: 
+  * Shows kanji
+  * Shows words containing it, whether at start, middle, or end
+* Type a multi-character query containing kanji: 
+  * Shows entries for its first four kanji in input order; expands to show further kanji.
+  * Shows an exact word-form match, highlighted.
+  * Shows other words containing that string of characters
+  * Later extension: shows sentences containing the word
+* Type hiragana / katakana:
+  * Treats hiragana and katakana readings as equivalent.
+  * Shows kanji with that reading (maybe only those where it's the primary reading?)
+  * Shows an exact word-form match, highlighted.
+  * Shows words that are typically written with those kana
+  * Shows words with that reading
+* Type English: 
+  * Shows kanji with that word as part of their core meaning
+  * Shows words with that word as (part of) one of their meanings
+  * Later extension: shows sentences with that word in their translation
+
+## 9. Open questions / deferred
 
 - **Persistence**: local SQLite vs. IndexedDB vs. flat files. Probably SQLite behind a tiny local server.
 - **Auto-ingest for lessons**: forward-to email address vs. manual paste. Start with paste.
@@ -86,7 +143,7 @@ A special case worth naming. Kanji the user mixes up (e.g. 実/美) get a compar
 - **Confusable detection from errors**: powerful but needs SRS history. Deferred.
 - **Auth / multi-user**: not in scope. Single-user, local-first.
 
-## 9. Non-goals
+## 10. Non-goals
 
 - Replacing Anki for users who already have a working deck
 - Being a complete Japanese course or textbook
