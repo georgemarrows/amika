@@ -28,8 +28,8 @@ One line per requirement. Each is a testable statement. Namespaces: `DATA` (mode
 
 - **R-UX-101** `⌘K` / `Ctrl+K` opens the palette; `Esc` closes it.
 - **R-UX-102** The palette searches Words, Kanji, Grammar, Texts, and Topics.
-- **R-UX-103** Matching is substring-based on kanji, kana, romaji, English, and topic.
-- **R-UX-104** Results are ranked: exact > prefix > substring; kanji matches weighted higher.
+- **R-UX-103** Initial dictionary matching supports exact and prefix written-form/reading matches with hiragana/katakana equivalence, single-kanji word-containment matches, and whole-word or word-prefix matching within English meanings; broader substring, romaji, and topic matching are deferred.
+- **R-UX-104** Initial dictionary results are ranked: exact > prefix; kanji matches are weighted higher and single-kanji containment results are ranked by available usefulness/frequency data.
 - **R-UX-105** Enter opens the top result; arrow keys + Enter navigate the result list.
 
 ## Selection lookup
@@ -62,7 +62,7 @@ One line per requirement. Each is a testable statement. Namespaces: `DATA` (mode
 
 - **R-ING-001** All ingestion flows end by producing a Text entity with JP/EN line pairs.
 - **R-ING-002** The shared editor supports selection-lookup while editing.
-- **R-ING-003** Saving a Text indexes the words it contains (updates `appears-in` backlinks).
+- **R-ING-003** Saving a Text indexes occurrences of words already in the user's library (updates `appears-in` backlinks without linking every dictionary match).
 - **R-ING-004** A Text's source type, title, and source metadata are set at ingest time and editable later.
 - **R-ING-005** Server request handling accepts bounded request bodies for JSON and file-ingest endpoints, with clear rejection when payloads exceed configured limits.
 

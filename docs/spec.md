@@ -100,8 +100,10 @@ A special case worth naming. Kanji the user mixes up (e.g. 実/美) get a compar
 
 ### Words
 * **Display pane**: reading, meanings, JLPT level, usefulness/frequency measures.
+  * The pane represents one dictionary entry. Searching for or encountering an alternative written form opens that same entry, rather than creating a separate dictionary word.
   * Navigate to: kanji it contains, sentences it appears in.
-* **SRS**: cards for recognition (word -> English/reading) and production (English/reading -> word). Result side is the full word card. To consider later: cloze cards for the word in an example sentence.
+  * Initially, sentence backlinks are recorded only for words explicitly added to the user's library; importing a text does not create links for every dictionary match.
+* **SRS**: cards for recognition (word -> English/reading) and production (English/reading -> word). A card preserves the encountered written form and selected learner-facing meaning when it is added. Result side is always the full dictionary entry card. To consider later: cloze cards for the word in an example sentence.
 * **List**: not yet spec'd
 
 
@@ -113,6 +115,8 @@ Overview
 * Kanji group: show first four matches; expand for more.
 * Within groups: order by usefulness/frequency if available, except where stated.
 * No deinflection yet: `食べました` does not find `食べる`.
+* Initial word matching is exact or prefix-based. Internal Japanese substring matching is deferred, except for the explicit single-kanji "words containing it" relation below.
+* Initial English meaning matching is by complete word or word prefix within a meaning: `book` can match `school book`, while `earn` does not match `learning`.
 
 Query types
 * Type single kanji: 
@@ -121,17 +125,17 @@ Query types
 * Type a multi-character query containing kanji: 
   * Shows entries for its first four kanji in input order; expands to show further kanji.
   * Shows an exact word-form match, highlighted.
-  * Shows other words containing that string of characters
-  * Later extension: shows sentences containing the word
+  * Shows other word forms beginning with that string of characters.
+  * Later extension: shows word forms containing that string internally and sentences containing the word.
 * Type hiragana / katakana:
   * Treats hiragana and katakana readings as equivalent.
   * Shows kanji with that reading (maybe only those where it's the primary reading?)
   * Shows an exact word-form match, highlighted.
-  * Shows words that are typically written with those kana
-  * Shows words with that reading
+  * Shows exact and prefix matches among words that are typically written with those kana.
+  * Shows exact and prefix reading matches; for example, `きょう` does not initially match `べんきょう`.
 * Type English: 
-  * Shows kanji with that word as part of their core meaning
-  * Shows words with that word as (part of) one of their meanings
+  * Shows kanji with that complete word or word prefix in their core meaning.
+  * Shows words with that complete word or word prefix in one of their meanings.
   * Later extension: shows sentences with that word in their translation
 
 ## 9. Open questions / deferred
@@ -142,6 +146,7 @@ Query types
 - **SRS algorithm**: SM-2 is simpler; FSRS is better. Probably start SM-2, swap later.
 - **Confusable detection from errors**: powerful but needs SRS history. Deferred.
 - **Auth / multi-user**: not in scope. Single-user, local-first.
+- **Alternative written forms in kanji results**: decide whether rare or irregular spellings cause an entry to appear in a kanji-to-word search. For example, `すり鉢` also has rare forms `擂り鉢` and `摺り鉢`; searching for `擂` or `摺` could include that entry or limit results to more typical forms.
 
 ## 10. Non-goals
 
