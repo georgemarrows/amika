@@ -2,6 +2,7 @@ import { For, Match, Show, Switch, createResource } from "solid-js";
 
 import { fetchKanjiList } from "../api";
 import type { PaneBodyProps } from "./pane-props";
+import { Badge, PaneTitle } from "./standard/components";
 
 export function KanjiListPane(props: Pick<PaneBodyProps, "openPane">) {
   const [list] = createResource(fetchKanjiList);
@@ -24,9 +25,8 @@ export function KanjiListPane(props: Pick<PaneBodyProps, "openPane">) {
       <Match when={list()}>
         {(loadedList) => (
           <>
-            <div class="hero">
-              <div class="section-title">Kanji · {loadedList().items.length}</div>
-            </div>
+            <PaneTitle title={`Kanji`} secondary={<Badge>{loadedList().items.length}</Badge>} />
+            
             <Show when={loadedList().items.length > 0} fallback={<div class="muted">No kanji imported yet.</div>}>
               <table class="dict">
                 <tbody>

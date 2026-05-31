@@ -18,6 +18,7 @@ import type { SrsUiState } from "../state/srs-ui-state";
 import { KanjiPane } from "./KanjiPane";
 import type { OpenPane } from "./pane-props";
 import { Columns, HorizontalRule } from "./helpers";
+import { Badge, PaneTitle } from './standard/components'
 
 type ReviewLogEntry = {
   literal: string;
@@ -103,10 +104,7 @@ export function ReviewPane(props: {
       <Match when={queue()}>
         {(loadedQueue) => (
           <section class="review-shell">
-            <div class="review-top">
-              <div class="section-title">Review</div>
-              <div class="review-progress">{loadedQueue().dueCount} due</div>
-            </div>
+            <PaneTitle title="Review" secondary={<Badge>{loadedQueue().dueCount} due</Badge>} />
 
             <Switch>
               <Match when={currentCard()}>

@@ -2,6 +2,7 @@ import { For, Match, Show, Switch, createResource } from "solid-js";
 
 import { fetchWordList } from "../api";
 import type { PaneBodyProps } from "./pane-props";
+import { Badge, PaneTitle } from "./standard/components";
 
 export function WordListPane(props: Pick<PaneBodyProps, "openPane">) {
   const [list] = createResource(fetchWordList);
@@ -24,9 +25,8 @@ export function WordListPane(props: Pick<PaneBodyProps, "openPane">) {
       <Match when={list()}>
         {(loadedList) => (
           <>
-            <div class="hero">
-              <div class="section-title">Words · {loadedList().items.length}</div>
-            </div>
+            <PaneTitle title={`Words`} secondary={<Badge>{loadedList().items.length}</Badge>} />
+            
             <Show when={loadedList().items.length > 0} fallback={<div class="muted">No words imported yet.</div>}>
               <table class="dict">
                 <tbody>

@@ -3,6 +3,7 @@ import { For, Match, Show, Switch, createResource } from "solid-js";
 import { fetchWordDetail } from "../api";
 import { createWordDetailViewModel } from "../models/word-detail-view-model";
 import type { OpenPane } from "./pane-props";
+import { PaneTitle } from "./standard/components";
 
 export function WordPane(props: { id: string; openPane: OpenPane }) {
   const [detail] = createResource(() => props.id, fetchWordDetail);
@@ -28,9 +29,8 @@ export function WordPane(props: { id: string; openPane: OpenPane }) {
 
           return (
             <>
-              <div class="hero">
-                <div class="section-title jp">{model.expression}</div>
-              </div>
+              <PaneTitle title={model.expression} />
+
               <div class="word-reading-large jp">{model.reading}</div>
               <div class="kanji-meaning">{model.primaryMeaning}</div>
               <div class="srs-btn">+ add to SRS</div>

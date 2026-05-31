@@ -217,6 +217,16 @@ code,
 
 }
 
+.pane-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-md);
+
+  & header {
+    font-size: 22px;
+  }
+}
 
 
 .pane-scroll-flash {
@@ -479,10 +489,6 @@ code,
 
 .home-title {
   font-size: 30px;
-}
-
-.section-title {
-  font-size: 22px;
 }
 
 .subtitle {
@@ -885,21 +891,6 @@ code,
   gap: var(--gap-lg);
 }
 
-.review-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-md);
-}
-
-.review-progress {
-  border-radius: var(--radius-lg);
-  background: var(--color-srs-bg);
-  color: var(--color-srs);
-  padding: 2px 8px;
-  font-size: 12px;
-  font-weight: 700;
-}
 
 .review-card,
 .review-summary {
@@ -1299,11 +1290,5 @@ code,
 
   .panes {
     min-height: 70vh;
-  }
-
-  .pane,
-  .pane.home {
-    width: min(100vw, var(--size-pane-width));
-    min-width: min(100vw, var(--size-pane-width));
   }
 }

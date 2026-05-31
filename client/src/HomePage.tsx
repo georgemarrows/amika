@@ -2,6 +2,7 @@ import { For } from "solid-js";
 
 import type { HomePageData } from "../../shared/home-data";
 import { createHomePageViewModel } from "./models/home-view-model";
+import { Badge } from "./components/standard/components";
 
 type HomePageProps = {
   state: HomePageData;
@@ -21,7 +22,7 @@ export function HomePage(props: HomePageProps) {
           <a class="nav-item nav-item-active" href="/">Home</a>
           <div class="nav-item">
             <span>Review</span>
-            <span class="badge">{props.state.review.dueCount}</span>
+            <Badge>{props.state.review.dueCount}</Badge>
           </div>
           <div class="nav-item nav-item-dim">Search</div>
           <div class="nav-section">Library</div>

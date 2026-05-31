@@ -8,6 +8,7 @@ import { createPaneState, describePane } from "../state/pane-state";
 import { createSrsUiState } from "../state/srs-ui-state";
 import { CommandPalette } from "./CommandPalette";
 import { PaneBody } from "./PaneBody";
+import { Badge } from "./standard/components";
 
 export function PaneShell(props: { state: HomePageData }) {
   let panesElement: HTMLDivElement | undefined;
@@ -82,7 +83,7 @@ export function PaneShell(props: { state: HomePageData }) {
           </button>
           <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("review")}>
             <span>Review</span>
-            <span class="badge">{srsState.dueCount()}</span>
+            <Badge>{srsState.dueCount()}</Badge>
           </button>
           <button class="nav-item" type="button" onClick={() => paneState.openFromRoot("srs-status")}>
             Card status
@@ -113,7 +114,6 @@ export function PaneShell(props: { state: HomePageData }) {
 
             return (
               <section class={`pane ${descriptor.className ?? ""}`}>
-
                 <div class="pane-body">
                   <PaneBody
                     paneKey={paneKey}

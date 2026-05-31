@@ -12,6 +12,7 @@ import {
   type SrsStatusSortKey,
 } from "../models/srs-status-view-model";
 import type { OpenPane } from "./pane-props";
+import { Badge, PaneTitle } from "./standard/components";
 
 export function SrsStatusPane(props: { openPane: OpenPane }) {
   const [matrix] = createResource(fetchSrsKanjiMatrix);
@@ -44,13 +45,9 @@ export function SrsStatusPane(props: { openPane: OpenPane }) {
       <Match when={matrix()}>
         {(loadedMatrix) => (
           <section class="srs-status-shell">
-            <div class="review-top">
-              <div>
-                <div class="section-title">SRS card status</div>
-                <p class="subtitle">Kanji with recognition and production cards, sorted by due status.</p>
-              </div>
-              <div class="review-progress">{loadedMatrix().items.length} kanji</div>
-            </div>
+            <PaneTitle title="SRS card status" secondary={<Badge>{loadedMatrix().items.length} kanji</Badge>} />
+          
+            <p class="subtitle">Kanji with recognition and production cards, sorted by due status.</p>
 
             <Switch>
               <Match when={rows().length === 0}>
