@@ -49,8 +49,6 @@ describe("pane state", () => {
   test("describes the SRS status pane", () => {
     expect(describePane("srs-status")).toEqual({
       key: "srs-status",
-      title: "SRS card status",
-      pill: "SRS",
       className: "srs-status-pane",
     });
   });

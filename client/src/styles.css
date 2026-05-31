@@ -204,17 +204,20 @@ code,
   flex-shrink: 0;
   border-right: var(--border-width) solid var(--color-border);
   background: var(--color-bg);
+
+  &.home {
+    width: var(--size-home-pane-width);
+    min-width: var(--size-home-pane-width);
+  }
+
+  &.srs-status-pane {
+    width: min(var(--size-srs-status-pane-width), calc(100vw - var(--size-sidebar-width)));
+    min-width: min(var(--size-srs-status-pane-width), calc(100vw - var(--size-sidebar-width)));
+  }
+
 }
 
-.pane.home {
-  width: var(--size-home-pane-width);
-  min-width: var(--size-home-pane-width);
-}
 
-.pane.srs-status-pane {
-  width: min(var(--size-srs-status-pane-width), calc(100vw - var(--size-sidebar-width)));
-  min-width: min(var(--size-srs-status-pane-width), calc(100vw - var(--size-sidebar-width)));
-}
 
 .pane-scroll-flash {
   animation: pane-scroll-flash 850ms ease-out;
@@ -232,20 +235,7 @@ code,
   }
 }
 
-.pane-head {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-md);
-  border-bottom: var(--border-width) solid var(--color-border);
-  background: var(--color-bg-raised);
-  padding: var(--size-pane-head-padding-y) var(--size-pane-head-padding-x);
-}
 
-.pane-head .title {
-  flex: 1;
-  color: var(--color-dim);
-  font-size: 13px;
-}
 
 .pill {
   margin-right: 8px;

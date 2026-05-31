@@ -13,8 +13,6 @@ export type PaneKey =
 
 export type PaneDescriptor = {
   key: PaneKey;
-  title: string;
-  pill: string;
   className?: string;
 };
 
@@ -72,30 +70,14 @@ export function createPaneState(initialPanes: PaneKey[] = createInitialPaneKeys(
 
 export function describePane(key: PaneKey): PaneDescriptor {
   if (key === "home") {
-    return { key, title: "Home", pill: "home", className: "home" };
-  }
-
-  if (key === "review") {
-    return { key, title: "Today's review", pill: "SRS" };
+    return { key, className: "home" };
   }
 
   if (key === "srs-status") {
-    return { key, title: "SRS card status", pill: "SRS", className: "srs-status-pane" };
+    return { key, className: "srs-status-pane" };
   }
 
-  if (key === "list-kanji") {
-    return { key, title: "All kanji", pill: "index" };
-  }
-
-  if (key === "list-words") {
-    return { key, title: "All words", pill: "index" };
-  }
-
-  if (key.startsWith("word:")) {
-    return { key, title: "Word", pill: "word" };
-  }
-
-  return { key, title: key.slice("kanji:".length), pill: "kanji" };
+  return { key };
 }
 
 export function openPane(panes: PaneKey[], key: PaneKey, afterIndex: number | null = null): PaneKey[] {

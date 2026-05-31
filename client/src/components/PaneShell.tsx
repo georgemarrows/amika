@@ -113,15 +113,7 @@ export function PaneShell(props: { state: HomePageData }) {
 
             return (
               <section class={`pane ${descriptor.className ?? ""}`}>
-                <header class="pane-head">
-                  <div class="title">
-                    <span class="pill">{descriptor.pill}</span>
-                    <span class="jp">{descriptor.title}</span>
-                  </div>
-                  <button class="close" type="button" onClick={() => paneState.close(paneKey)}>
-                    ×
-                  </button>
-                </header>
+
                 <div class="pane-body">
                   <PaneBody
                     paneKey={paneKey}
